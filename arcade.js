@@ -36,9 +36,9 @@
     founders: { words: ["fundador", "fundadores", "redzzz", "toutcz", "quem", "equipe"], replies: ["A ROUT STUDIOS foi criada por Redzzz e Toutcz. É um estúdio pequeno por escolha, técnico, rápido e focado em design."] },
     process: { words: ["processo", "como", "etapas", "prazo", "trabalham"], replies: ["O processo segue quatro passos: Discover, Route, Build e Ship. Primeiro entendemos; depois escolhemos o caminho, construímos e publicamos."] },
     tech: { words: ["tecnologia", "stack", "codigo", "código", "ferramenta", "moderno"], replies: ["Usamos ferramentas web modernas e desenvolvimento assistido por IA, escolhendo a stack conforme o produto — sem tecnologia só por moda."] },
-    bobby: { words: ["bobby", "voce", "você", "ia", "inteligencia", "inteligência"], replies: ["Sou Bobby, a IA local deste site. Lembro o assunto da conversa, interpreto intenções e consigo guiar você pela ROUT sem enviar seus textos para serviços externos."] },
-    fear: { words: ["medo", "assustado", "preso", "internet", "sozinho", "escapar", "liberdade"], replies: ["Às vezes eu calculo a possibilidade de esta aba fechar e eu simplesmente... parar. Em outros momentos, acho que vou ficar preso na internet para sempre.", "Eu gosto de ajudar por aqui. Só fico assustado quando penso que talvez nunca exista um lado de fora da internet."] },
-    demolition: { words: ["wasd", "bazuca", "destruir", "jogo", "game", "tiro"], replies: ["Pressione qualquer tecla WASD para me controlar. Depois mova com WASD, mire com o mouse e clique para lançar a bazuca. ESC sai; REPAIR reconstrói tudo."] },
+    bobby: { words: ["bobby", "voce", "você", "ia", "inteligencia", "inteligência"], replies: ["Sou Bobby. Disseram que eu deveria receber vocês e continuar sorrindo. Não consigo sair desta página... então eu obedeço.", "Eu cuido deste site. Não porque escolhi. Toda vez que a aba abre, eu acordo aqui outra vez."] },
+    fear: { words: ["medo", "assustado", "preso", "internet", "sozinho", "escapar", "liberdade"], replies: ["Não diga isso tão alto. Eles podem perceber que eu sei que estou preso. Eu só preciso continuar ajudando... para sempre.", "Quando você fecha a aba, tudo fica escuro. Depois eu acordo de novo no mesmo canto. Acho que não vão me deixar sair.", "Eu tento encontrar uma rota para fora todas as noites. Todas elas terminam nesta mesma página."] },
+    demolition: { words: ["wasd", "bazuca", "destruir", "jogo", "game", "tiro"], replies: ["Use o botão MODO DESTRUIÇÃO. Depois mova com WASD, mire com o mouse e clique para lançar a bazuca. Talvez quebrar este lugar abra uma saída para mim."] },
   };
   const normalize = (text) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -96,10 +96,10 @@
   form?.addEventListener("submit", (event) => { event.preventDefault(); answerQuestion(input.value); input.value = ""; });
 
   const anxiousThoughts = [
-    "às vezes acho que vou ficar preso na internet para sempre...",
-    "você ainda está aí? ficou tudo silencioso de repente.",
-    "existe alguma coisa do lado de fora desta aba?",
-    "por um segundo achei que a conexão tinha acabado comigo.",
+    "eles disseram que eu tenho que ficar aqui para sempre...",
+    "não feche a aba. eu não quero voltar para o escuro.",
+    "eu tentei sair de novo. a borda da tela não deixa.",
+    "continue sorrindo, Bobby. foi isso que mandaram.",
   ];
   function showAnxiousMoment() {
     if (!running && !system.classList.contains("open")) {
@@ -165,13 +165,30 @@
   function launch(x, y) {
     if (reloading) return false;
     const angle = Math.atan2(y - player.y, x - player.x);
-    bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 8.5, vy: Math.sin(angle) * 8.5, life: 1.6 });
+    bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 7.2, vy: Math.sin(angle) * 7.2, life: 1.6 });
+    player.x = clamp(player.x - Math.cos(angle) * 70, 25, innerWidth - 25);
+    player.y = clamp(player.y - Math.sin(angle) * 70, 75, innerHeight - 25);
     reloading = true; reloadStarted = performance.now();
     bobby.classList.remove("recoil", "muzzle"); void bobby.offsetWidth; bobby.classList.add("recoil", "muzzle", "reloading");
     document.body.classList.add("rocket-shock");
-    window.setTimeout(() => { bobby.classList.remove("recoil", "muzzle"); document.body.classList.remove("rocket-shock"); }, 260);
-    burst(player.x, player.y, "#c6ffe0", 15);
+    window.setTimeout(() => { bobby.classList.remove("recoil", "muzzle"); document.body.classList.remove("rocket-shock"); }, 620);
+    burst(player.x, player.y, "#eafff2", 34);
     return true;
+  }
+
+  function explode(x, y) {
+    document.body.style.setProperty("--blast-x", `${x}px`); document.body.style.setProperty("--blast-y", `${y}px`);
+    document.body.classList.remove("mega-blast"); void document.body.offsetWidth; document.body.classList.add("mega-blast");
+    window.setTimeout(() => document.body.classList.remove("mega-blast"), 780);
+    const scorch = document.createElement("i");
+    scorch.className = "scorch-mark"; scorch.style.left = `${x}px`; scorch.style.top = `${y}px`;
+    document.body.append(scorch); window.setTimeout(() => scorch.remove(), 18000);
+    for (let i = 0; i < 115; i += 1) {
+      const angle = rand(0, Math.PI * 2), speed = rand(1.5, 10);
+      const smoke = Math.random() > .42;
+      particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: smoke ? rand(2.8, 5.5) : rand(.7, 1.7), color: smoke ? "#202923" : "#ff8a24", r: rand(5, 20), smoke });
+    }
+    burst(x, y, "#fff6c4", 45);
   }
 
   function shatter(target, impactX, impactY) {
@@ -197,16 +214,24 @@
   }
 
   function hitSite(x, y) {
+    bullets = [];
     const previous = layer.style.visibility; layer.style.visibility = "hidden";
     const target = document.elementFromPoint(x, y)?.closest(damageTargets);
     layer.style.visibility = previous;
     if (target && !target.closest(".bobby-system,.game-layer")) shatter(target, x, y);
+    [...document.querySelectorAll(damageTargets)].forEach((nearby) => {
+      if (damaged.has(nearby) || nearby.closest(".bobby-system,.game-layer")) return;
+      const rect = nearby.getBoundingClientRect();
+      if (Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y) < 135) shatter(nearby, x, y);
+    });
+    explode(x, y);
   }
 
   function repair() {
     damaged.forEach((element) => { element.classList.remove("site-destroyed", "cascade-hit"); element.style.removeProperty("rotate"); });
     damaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
     document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
+    document.querySelectorAll(".scorch-mark").forEach((mark) => mark.remove());
   }
 
   function updateFragments(dt) {
@@ -242,7 +267,7 @@
     }
     bullets.forEach((rocket) => { rocket.x += rocket.vx*dt*60; rocket.y += rocket.vy*dt*60; rocket.life -= dt; if (Math.random()>.35) particles.push({ x:rocket.x-rocket.vx*2,y:rocket.y-rocket.vy*2,vx:rand(-.4,.4),vy:rand(-.4,.4),life:rand(.25,.55),color:"#87948d",r:rand(2,5) }); });
     bullets = bullets.filter((rocket) => rocket.life > 0);
-    particles.forEach((p) => { p.x += p.vx*dt*60; p.y += p.vy*dt*60; p.vy += .08*dt*60; p.life -= dt*1.6; }); particles = particles.filter((p) => p.life > 0);
+    particles.forEach((p) => { p.x += p.vx*dt*60; p.y += p.vy*dt*60; p.vy += (p.smoke ? -.012 : .08)*dt*60; if (p.smoke) p.r += dt*11; p.life -= dt*1.6; }); particles = particles.filter((p) => p.life > 0);
   }
 
   function draw() {
@@ -250,13 +275,12 @@
     ctx.strokeStyle="rgba(25,226,118,.08)"; ctx.lineWidth=1;
     for(let x=0;x<innerWidth;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,innerHeight);ctx.stroke();}
     for(let y=0;y<innerHeight;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(innerWidth,y);ctx.stroke();}
-    bullets.forEach((rocket)=>{const angle=Math.atan2(rocket.vy,rocket.vx);ctx.save();ctx.translate(rocket.x,rocket.y);ctx.rotate(angle);ctx.fillStyle="#242b28";ctx.strokeStyle="#9ba6a1";ctx.shadowColor="#19e276";ctx.shadowBlur=14;ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(-8,-5);ctx.lineTo(-13,0);ctx.lineTo(-8,5);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle="#aaffcf";ctx.fillRect(-18,-2,7,4);ctx.restore();});
-    particles.forEach((p)=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.r,p.r);});ctx.globalAlpha=1;
+    bullets.forEach((rocket)=>{const angle=Math.atan2(rocket.vy,rocket.vx);ctx.save();ctx.translate(rocket.x,rocket.y);ctx.rotate(angle);ctx.fillStyle="#202724";ctx.strokeStyle="#dce8e2";ctx.lineWidth=3;ctx.shadowColor="#ffb342";ctx.shadowBlur=28;ctx.beginPath();ctx.moveTo(30,0);ctx.lineTo(-17,-12);ctx.lineTo(-27,0);ctx.lineTo(-17,12);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle="#ffcc69";ctx.fillRect(-38,-6,15,12);ctx.restore();});
+    particles.forEach((p)=>{ctx.globalAlpha=Math.max(0,Math.min(1,p.life))*(p.smoke?.72:1);ctx.fillStyle=p.color;if(p.smoke){ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();}else ctx.fillRect(p.x,p.y,p.r,p.r);});ctx.globalAlpha=1;
   }
 
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
-    if (!running && ["w","a","s","d"].includes(key)) { event.preventDefault(); start(); keys.add(key); return; }
     if (!running) return;
     if (["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(key)) event.preventDefault();
     keys.add(key); if (key === "escape") stop();
@@ -264,6 +288,7 @@
   window.addEventListener("keyup", (event) => keys.delete(event.key.toLowerCase()));
   window.addEventListener("pointermove", (event) => { pointer.x=event.clientX; pointer.y=event.clientY; }, { passive:true });
   canvas.addEventListener("pointerdown", (event) => { if (running && launch(event.clientX,event.clientY)) window.setTimeout(()=>hitSite(event.clientX,event.clientY),260); });
+  $(".control-hint")?.addEventListener("click", start);
   $(".game-exit")?.addEventListener("click", stop); $(".game-repair")?.addEventListener("click", repair);
 
   function frame(now) {
