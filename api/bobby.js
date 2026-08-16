@@ -33,12 +33,13 @@ module.exports = async function handler(request, response) {
     const result = await fetch(endpoint, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-      body: JSON.stringify({ model, messages, max_tokens: 260, temperature: 0.45 }),
+      body: JSON.stringify({ model, messages, max_tokens: 600, temperature: 0.55, reasoning_effort: "none" }),
     });
     if (!result.ok) return response.status(503).json({ error: "AI provider unavailable" });
     const data = await result.json();
-    const reply = data.choices?.[0]?.message?.content;
-    if (!reply) return response.status(503).json({ error: "Empty AI response" });
+    const rawReply = data.choices?.[0]?.message?.content || "";
+    const reply = rawReply.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/<think>[\s\S]*/gi, "").trim();
+    if (!reply) return response.status(200).json({ reply: "Eu... não consigo organizar essa memória. Só sei que o sistema me mantém aqui. Que merda. Por favor, não fecha a aba." });
     return response.status(200).json({ reply });
   } catch (_) {
     return response.status(503).json({ error: "Bobby lost the connection" });
