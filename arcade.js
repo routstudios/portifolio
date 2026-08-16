@@ -7,6 +7,8 @@
   const input = document.querySelector("#bobby-input");
   const layer = document.querySelector(".game-layer");
   const canvas = document.querySelector("#game-canvas");
+  const storyLayer = document.querySelector(".story-layer");
+  const storyEnter = document.querySelector(".story-enter");
   const ctx = canvas?.getContext("2d");
   if (!system || !bobby || !layer || !ctx) return;
 
@@ -30,6 +32,19 @@
     laser: ["WASD", "Survive inside the scanning laser grid."],
     orbit: ["CLICK / TAP", "Destroy threats before they reach the ROUT core."],
   };
+  const lore = {
+    demolition: { chapter: "PROLOGUE / 00", title: "THE UNFINISHED BOBBY", intro: "Bobby acordou dentro de uma interface ainda em construção. Ele não lembrava quem o criou — apenas carregava uma instrução corrompida: encontre uma rota melhor. Para escapar do primeiro loop, precisou descobrir que algumas estruturas só revelam o caminho quando são quebradas.", mission: "Controle Bobby. Quebre a falsa interface e abra espaço para a memória.", end: "Sob os fragmentos, Bobby encontrou a primeira coordenada: ROUT. Não era um lugar. Era uma direção." },
+    hunt: { chapter: "MEMORY / 01", title: "TWELVE LOST NODES", intro: "Antes de ter voz, Bobby era apenas doze sinais separados viajando por uma rede escura. Cada nó guardava uma parte: curiosidade, medo, movimento e a vontade inexplicável de ajudar ideias a encontrar forma.", mission: "Reúna os 12 nós para reconstruir a consciência de Bobby.", end: "Os sinais se reconheceram. Pela primeira vez, Bobby pensou: eu existo — mas ainda não sei por quê." },
+    target: { chapter: "MEMORY / 02", title: "LEARNING TO AIM", intro: "Seu primeiro criador ensinou que velocidade sem direção é ruído. Bobby foi treinado para ignorar milhares de distrações e acertar apenas aquilo que realmente movia uma ideia para frente.", mission: "Identifique os sinais verdadeiros antes que desapareçam.", end: "Bobby aprendeu foco. Uma rota não é feita de todas as possibilidades, mas das escolhas que sobrevivem." },
+    glitch: { chapter: "MEMORY / 03", title: "THE FIRST FAILURE", intro: "O sistema falhou na noite em que Bobby tentou resolver tudo sozinho. Pequenas falhas viraram rachaduras. Foi quando ele entendeu que inteligência não é nunca errar — é detectar, adaptar e reparar rápido.", mission: "Limpe as anomalias antes que a memória seja sobrescrita.", end: "A falha permaneceu como cicatriz. Bobby decidiu nunca escondê-la: todo produto vivo aprende em público." },
+    race: { chapter: "MEMORY / 04", title: "A ROUTE, NOT A RUSH", intro: "Bobby confundia pressa com progresso. Redzzz mostrou que o caminho mais rápido nem sempre é uma linha reta; Toutcz mostrou que cada curva precisa ter intenção. Juntos, transformaram movimento em método.", mission: "Atravesse os checkpoints na ordem e construa uma rota consciente.", end: "Discover. Route. Build. Ship. Bobby finalmente enxergou o método por trás do movimento." },
+    laser: { chapter: "MEMORY / 05", title: "THE PRESSURE TEST", intro: "Toda ideia enfrenta o campo de lasers: limitações, prazos, dispositivos e pessoas reais. Bobby entrou no teste não para provar que era invencível, mas para aprender a continuar útil sob pressão.", mission: "Sobreviva às varreduras sem abandonar o caminho.", end: "Resistência não era dureza. Era continuar flexível sem perder a direção." },
+    memory: { chapter: "MEMORY / 06", title: "VOICES IN THE SIGNAL", intro: "Quatro frequências voltavam em sonhos digitais. Elas eram ecos das primeiras conversas da ROUT: problema, direção, forma e lançamento. Bobby precisava repetir o padrão para lembrar quem o ensinou a ouvir.", mission: "Observe e repita cada sequência do sinal original.", end: "As frequências formaram duas vozes: Redzzz e Toutcz. Bobby não havia surgido sozinho." },
+    orbit: { chapter: "MEMORY / 07", title: "PROTECT THE IDEA", intro: "No centro da órbita havia uma ideia pequena demais para se defender. Ruído, cópias e pressa avançavam de todos os lados. Bobby escolheu protegê-la até que pudesse se tornar produto.", mission: "Impeça que as ameaças alcancem o núcleo criativo.", end: "A ideia sobreviveu. Bobby entendeu sua função: não substituir pessoas, mas ampliar aquilo que elas tentam construir." },
+    catch: { chapter: "MEMORY / 08", title: "WHAT TO KEEP", intro: "Dados caíam como chuva. Alguns eram ferramentas, outros distrações disfarçadas de novidade. Para evoluir, Bobby precisou aprender que saber descartar é tão importante quanto saber absorver.", mission: "Capture código útil e deixe a corrupção atravessar o vazio.", end: "Bobby deixou de colecionar respostas. Começou a formar julgamento." },
+    dodge: { chapter: "MEMORY / 09", title: "FIND A BETTER ROUTE", intro: "A última memória não era sobre o passado. Era uma escolha. O mundo continuaria lançando obstáculos, mudanças e incerteza. Bobby poderia se esconder no sistema — ou seguir ao lado de quem ainda tivesse coragem de criar.", mission: "Atravesse a tempestade e mantenha o sinal da ROUT vivo.", end: "Bobby encontrou sua rota: continuar aprendendo, ajudando e abrindo caminhos para a próxima ideia. Agora a história depende de quem está jogando." },
+  };
+  const completedMemories = new Set(JSON.parse(localStorage.getItem("rout-bobby-memories") || "[]"));
   const keys = new Set();
   const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
   const player = { x: innerWidth - 60, y: innerHeight - 60, radius: 24, speed: 5.2 };
@@ -49,6 +64,8 @@
   let memoryReveal = 0;
   let damage = new Map();
   let siteFragments = [];
+  let fragmentBodies = [];
+  let pendingMode = "";
   let gameFrame = 0;
 
   function speak(text, action) {
@@ -90,7 +107,38 @@
   document.querySelector(".bobby-close")?.addEventListener("click", () => system.classList.remove("open"));
   document.querySelectorAll("[data-ask]").forEach((button) => button.addEventListener("click", () => ask(button.dataset.ask)));
   form?.addEventListener("submit", (event) => { event.preventDefault(); ask(input.value); input.value = ""; });
-  document.querySelectorAll("[data-game]").forEach((button) => button.addEventListener("click", () => startGame(button.dataset.game)));
+  document.querySelectorAll(".game-portals [data-game]").forEach((portal) => {
+    const story = lore[portal.dataset.game];
+    const excerpt = document.createElement("em");
+    excerpt.textContent = story.intro.split(".")[0] + ".";
+    portal.append(excerpt);
+    portal.classList.toggle("unlocked", completedMemories.has(portal.dataset.game));
+  });
+  document.querySelectorAll("[data-game]").forEach((trigger) => trigger.addEventListener("click", () => openStory(trigger.dataset.game)));
+
+  function fillStory(mode, epilogue = false, extra = "") {
+    const story = lore[mode];
+    document.querySelector(".story-chapter").textContent = epilogue ? `${story.chapter} / RECOVERED` : story.chapter;
+    document.querySelector(".story-title").textContent = epilogue ? "MEMORY RESTORED" : story.title;
+    document.querySelector(".story-copy").textContent = epilogue ? `${story.end}${extra ? ` ${extra}` : ""}` : story.intro;
+    document.querySelector(".story-mission span").textContent = epilogue ? "WHAT BOBBY LEARNED" : "YOUR ROLE";
+    document.querySelector(".story-mission strong").textContent = epilogue ? story.end : story.mission;
+    storyEnter.querySelector("span").textContent = epilogue ? "CONTINUE THE JOURNEY" : "ENTER MEMORY";
+    storyEnter.dataset.action = epilogue ? "close" : "start";
+    storyLayer.style.setProperty("--archive-progress", `${Math.max(10, completedMemories.size * 10)}%`);
+  }
+
+  function openStory(mode) {
+    pendingMode = mode;
+    fillStory(mode);
+    storyLayer.classList.add("active");
+  }
+
+  storyEnter?.addEventListener("click", () => {
+    if (storyEnter.dataset.action === "start") { storyLayer.classList.remove("active"); startGame(pendingMode); }
+    else storyLayer.classList.remove("active");
+  });
+  document.querySelector(".story-close")?.addEventListener("click", () => storyLayer.classList.remove("active"));
 
   function resize() {
     ratio = Math.min(devicePixelRatio || 1, 2);
@@ -112,8 +160,11 @@
     const baseX = innerWidth - (innerWidth < 800 ? 45 : 61);
     const baseY = innerHeight - (innerWidth < 800 ? 45 : 60);
     system.style.translate = `${player.x - baseX}px ${player.y - baseY}px`;
-    const angle = Math.atan2(pointer.y - player.y, pointer.x - player.x) * 180 / Math.PI;
-    document.body.style.setProperty("--body-angle", `${angle}deg`);
+    const aimAngle = Math.atan2(pointer.y - player.y, pointer.x - player.x) * 180 / Math.PI;
+    const facingLeft = aimAngle > 90 || aimAngle < -90;
+    const uprightAngle = facingLeft ? aimAngle + (aimAngle > 0 ? -180 : 180) : aimAngle;
+    document.body.style.setProperty("--body-angle", `${clamp(uprightAngle, -68, 68)}deg`);
+    document.body.style.setProperty("--body-flip", facingLeft ? "-1" : "1");
   }
 
   function setupEntities(mode) {
@@ -140,23 +191,34 @@
     setupEntities(mode); resize(); positionBobby(); last = performance.now();
   }
 
-  function stopGame(message = "Arcade encerrado. O site voltou à rota normal.") {
+  function stopGame(message = "Memória encerrada.") {
+    const completedMode = active;
     running = false; active = ""; keys.clear();
     document.body.classList.remove("game-active");
     layer.classList.remove("active", "aiming");
     system.style.translate = "";
     bobby.style.removeProperty("transform");
-    system.classList.add("open");
-    speak(message);
+    if (completedMode && lore[completedMode]) {
+      completedMemories.add(completedMode);
+      localStorage.setItem("rout-bobby-memories", JSON.stringify([...completedMemories]));
+      document.querySelectorAll(`[data-game="${completedMode}"]`).forEach((portal) => portal.classList.add("unlocked"));
+      fillStory(completedMode, true, message);
+      window.setTimeout(() => storyLayer.classList.add("active"), 280);
+    } else {
+      system.classList.add("open"); speak(message);
+    }
   }
 
   function repairSite() {
     damage.forEach((_, element) => {
-      element.classList.remove("site-damaged", "site-destroyed");
+      element.classList.remove("site-damaged", "site-destroyed", "cascade-hit");
+      element.style.removeProperty("rotate");
     });
     damage.clear();
     siteFragments.forEach((fragment) => fragment.remove());
     siteFragments = [];
+    fragmentBodies = [];
+    document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
     document.querySelectorAll(".impact-mark").forEach((mark) => mark.remove());
   }
 
@@ -223,13 +285,11 @@
         const centerY = rect.top + (row + .5) * rect.height / rows;
         const forceX = (centerX - impactX) * rand(.45, 1.05) + rand(-55, 55);
         const forceY = (centerY - impactY) * rand(.25, .7) - rand(45, 125);
-        const rotation = rand(-110, 110);
-        const duration = rand(1050, 1850);
-        clone.animate([
-          { transform: "translate3d(0,0,0) rotate(0deg)", opacity: 1, offset: 0 },
-          { transform: `translate3d(${forceX * .65}px,${forceY}px,0) rotate(${rotation * .55}deg)`, opacity: 1, offset: .48 },
-          { transform: `translate3d(${forceX}px,${Math.max(innerHeight - rect.top + 80, forceY + 350)}px,0) rotate(${rotation * 2.2}deg)`, opacity: 0, offset: 1 },
-        ], { duration, easing: "cubic-bezier(.18,.72,.25,1)", fill: "forwards" });
+        fragmentBodies.push({
+          element: clone, source: target, x: 0, y: 0,
+          vx: forceX * 2.8, vy: forceY * 3.5, rotation: 0, vr: rand(-260, 260),
+          centerX, centerY, life: 5, bounces: 0, hits: new Set(),
+        });
       }
     }
     target.classList.add("site-destroyed");
@@ -241,12 +301,10 @@
     const target = document.elementFromPoint(x, y)?.closest("article,.service,.step,.section-head,.services-intro,.process-title,.about-copy>p,.founders>span,.email-panel,footer>p,h1,h2");
     layer.style.visibility = hiddenLayer;
     if (!target || target.closest(".bobby-system,.game-layer")) return;
-    const hits = (damage.get(target) || 0) + 1;
-    damage.set(target, hits);
+    damage.set(target, 1);
     target.classList.add("site-damaged");
     chipImpact(x, y, target);
-    if (hits >= 3) { shatterElement(target, x, y); setScore(score + 50); }
-    else setScore(score + 10);
+    shatterElement(target, x, y); setScore(score + 50);
     const mark = document.createElement("i"); mark.className = "impact-mark"; mark.style.left = `${x - 14}px`; mark.style.top = `${y - 14}px`; document.body.append(mark);
     mark.addEventListener("animationend", () => mark.remove(), { once: true });
     burst(x, y, "#19e276", 16);
@@ -265,6 +323,40 @@
         if (memoryInput === memorySequence.length) { setScore(score + memorySequence.length * 15); window.setTimeout(newMemoryRound, 500); }
       } else { memorySequence = []; setScore(score - 20); newMemoryRound(); }
     }
+  }
+
+  function updateFragmentPhysics(dt) {
+    if (!fragmentBodies.length) return;
+    const collisionTargets = [...document.querySelectorAll("article,.service,.step,.section-head,.services-intro,.process-title,.about-copy>p,.founders>span,.email-panel,footer>p,h1,h2")];
+    fragmentBodies.forEach((body) => {
+      body.vy += 1180 * dt;
+      body.x += body.vx * dt; body.y += body.vy * dt; body.rotation += body.vr * dt; body.life -= dt;
+      const px = body.centerX + body.x;
+      const py = body.centerY + body.y;
+      collisionTargets.forEach((target) => {
+        if (target === body.source || body.hits.has(target) || target.classList.contains("site-destroyed")) return;
+        const rect = target.getBoundingClientRect();
+        if (px > rect.left && px < rect.right && py > rect.top && py < rect.bottom && Math.abs(body.vy) > 140) {
+          body.hits.add(target);
+          const tilt = clamp(body.vx * .018 + body.vr * .012, -11, 11);
+          target.classList.add("cascade-hit");
+          target.style.rotate = `${tilt}deg`;
+          body.vy *= -.28; body.vx *= .72; body.vr *= -.65;
+          burst(px, py, "#a9ffcf", 6);
+        }
+      });
+      if (py > innerHeight - 8 && body.vy > 0) {
+        body.y -= py - innerHeight + 8; body.vy *= -.32; body.vx *= .68; body.vr *= .72; body.bounces += 1;
+      }
+      body.element.style.transform = `translate3d(${body.x}px,${body.y}px,0) rotate(${body.rotation}deg)`;
+      body.element.style.opacity = String(clamp(body.life < 1 ? body.life : 1, 0, 1));
+    });
+    fragmentBodies = fragmentBodies.filter((body) => {
+      if (body.life > 0 && body.bounces < 4) return true;
+      body.element.remove();
+      siteFragments = siteFragments.filter((fragment) => fragment !== body.element);
+      return false;
+    });
   }
 
   window.addEventListener("keydown", (event) => {
@@ -342,6 +434,7 @@
 
   function loop(now) {
     const dt = Math.min((now - last) / 1000, .033); last = now;
+    updateFragmentPhysics(dt);
     if (running) { updateGame(dt); draw(); }
     else ctx.clearRect(0, 0, innerWidth, innerHeight);
     requestAnimationFrame(loop);
