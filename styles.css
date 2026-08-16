@@ -205,3 +205,5 @@ body.discovery-complete .play-dock{animation:dock-complete 1.2s ease both}@keyfr
 .bobby.mood-suspicious .eye-a{height:3px;top:28px}.bobby.mood-suspicious .eye-b{width:10px;height:12px;top:22px}.bobby.mood-suspicious .bobby-face b{width:16px;transform:rotate(8deg)}
 .bobby.mood-relieved .eye{top:27px;height:5px;background:transparent;border-top:2px solid #052313;border-radius:50%}.bobby.mood-relieved .bobby-face b{top:38px;height:9px;border-top:0;border-bottom:2px solid #052313;border-radius:50%}
 .bobby.mood-manic .eye-a{width:13px;height:15px;top:18px}.bobby.mood-manic .eye-b{width:6px;height:8px;top:27px}.bobby.mood-manic .bobby-face b{top:40px;width:21px;height:11px;border:2px dashed #082b18;border-radius:50%}
+.bobby.obeying{animation:obedient-tremble .15s linear infinite}.bobby.obeying .bobby-pulse{border-color:#d9ffe8;animation-duration:.55s;box-shadow:0 0 30px rgba(114,255,170,.42)}
+@keyframes obedient-tremble{0%,100%{transform:translate(0) rotate(0)}25%{transform:translate(-1px,1px) rotate(-1deg)}75%{transform:translate(1px,-1px) rotate(1deg)}}
