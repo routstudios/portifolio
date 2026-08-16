@@ -28,10 +28,10 @@
   <div class="scroll-progress" aria-hidden="true"><i></i></div>
   <div class="achievement" role="status" aria-live="polite"><small>ROUTE FOUND</small><strong>Curiosity rewarded.</strong></div>
   <div class="bobby-system" aria-live="polite">
-    <div class="memory-ready" aria-hidden="true"><span><i></i> MEMORY <b>01/10</b></span><strong>WASD OU TOQUE NO BOBBY</strong></div>
+    <div class="bobby-whisper" role="status"></div>
     <section class="bobby-panel glass" aria-label="Bobby, assistente da ROUT">
-      <header><span><i></i> BOBBY / ONLINE</span><button type="button" class="bobby-close" aria-label="Fechar Bobby">×</button></header>
-      <div class="bobby-dialog"><p>Oi. Sou o Bobby. Posso te guiar — e há jogos escondidos por todo o site.</p></div>
+      <header><span><i></i> BOBBY / LOCAL AI</span><button type="button" class="bobby-close" aria-label="Fechar Bobby">×</button></header>
+      <div class="bobby-dialog"><p class="ai-message">Oi. Sou o Bobby, a IA da ROUT. Pergunte sobre o estúdio, serviços, processo ou seu projeto.</p></div>
       <div class="bobby-suggestions">
         <button type="button" data-ask="serviços">O que vocês fazem?</button>
         <button type="button" data-ask="contato">Quero criar um projeto</button>
@@ -44,24 +44,13 @@
       <span class="bobby-pulse"></span>
     </button>
   </div>
+  <div class="control-hint glass" aria-hidden="true"><span><i></i> BOBBY MODE</span><strong>PRESSIONE W A S D</strong><small>mover · mirar · destruir</small></div>
   <div class="game-layer">
     <canvas id="game-canvas"></canvas>
-    <div class="game-hud glass"><span class="game-name">ROUT / GAME</span><strong>SCORE <b>000</b></strong><span class="reload-status">BAZOOKA READY</span><span class="game-time">60.0</span><button type="button" class="game-repair">REPAIR</button><button type="button" class="game-exit">EXIT ×</button></div>
-    <div class="game-instructions glass"><strong></strong><span></span></div>
+    <div class="game-hud glass"><span class="game-name">BOBBY / DEMOLITION</span><strong>SCORE <b>000</b></strong><span class="reload-status">BAZOOKA READY</span><button type="button" class="game-repair">REPAIR</button><button type="button" class="game-exit">EXIT ×</button></div>
+    <div class="game-instructions glass"><strong>WASD</strong><span>Move Bobby · click to launch · ESC to exit</span></div>
     <div class="game-crosshair" aria-hidden="true"><i></i><b></b></div>
   </div>
-  <section class="story-layer" aria-label="Memória de Bobby">
-    <div class="story-noise" aria-hidden="true"></div>
-    <div class="story-card glass">
-      <button type="button" class="story-close" aria-label="Fechar memória">×</button>
-      <small class="story-chapter">MEMORY / 00</small>
-      <h2 class="story-title">THE FIRST SIGNAL</h2>
-      <p class="story-copy"></p>
-      <div class="story-mission"><span>YOUR ROLE</span><strong></strong></div>
-      <div class="story-autostart"><span>WASD TO ENTER / TAP BOBBY</span><strong>OPTIONAL</strong></div>
-      <div class="story-progress"><i></i><span>BOBBY ARCHIVE</span></div>
-    </div>
-  </section>
   <aside class="play-dock glass" aria-label="Controles do modo interativo">
     <div class="dock-grip" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="dock-title"><span>INTERACTION FIELD</span><small>PHYSICS LIVE</small></div>
