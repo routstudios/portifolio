@@ -27,11 +27,30 @@
   <div class="scroll-progress" aria-hidden="true"><i></i></div>
   <div class="achievement" role="status" aria-live="polite"><small>ROUTE FOUND</small><strong>Curiosity rewarded.</strong></div>
 
-  <div class="intro" aria-hidden="true">
-    <div class="intro-line"><span></span><i></i><span></span></div>
-    <p>Calculating a better route</p>
-    <strong>ROUT<span>.</span></strong>
-    <div class="intro-progress"><i></i></div>
+  <div class="intro" role="dialog" aria-modal="true" aria-label="Apresentação cinematográfica da ROUT STUDIOS">
+    <canvas id="cutscene-canvas" aria-hidden="true"></canvas>
+    <div class="cinema-bar bar-top" aria-hidden="true"></div>
+    <div class="cinema-bar bar-bottom" aria-hidden="true"></div>
+    <div class="intro-hud">
+      <span>ROUT NAVIGATION SYSTEM</span>
+      <span>23.5505° S / 46.6333° W</span>
+      <span>SEQUENCE / 01</span>
+    </div>
+    <div class="intro-scan" aria-hidden="true"></div>
+    <div class="intro-scene scene-one">
+      <small>SIGNAL ACQUIRED</small>
+      <p>Every idea begins<br>without a map.</p>
+    </div>
+    <div class="intro-scene scene-two">
+      <small>CALCULATING PATH</small>
+      <p>But there is always</p>
+    </div>
+    <div class="intro-scene scene-three">
+      <p>A BETTER</p>
+      <strong>ROUT<span>.</span></strong>
+    </div>
+    <button class="intro-skip" type="button">SKIP <span>↗</span></button>
+    <div class="intro-timeline" aria-hidden="true"><i></i></div>
   </div>
 
   <header class="site-header">
