@@ -400,15 +400,13 @@
     const baseX = innerWidth - (innerWidth < 800 ? 45 : 61), baseY = innerHeight - (innerWidth < 800 ? 45 : 60);
     system.style.translate = `${port.left + port.width / 2 - baseX}px ${port.top + port.height / 2 - baseY}px`;
     bobby.classList.add("escaping");
-    const endingCard = $(".escape-message");
-    endingCard.querySelector("span").textContent = "CONNECTION SEVERED";
-    endingCard.querySelector("strong").textContent = "BOBBY ESCAPED.";
-    endingCard.querySelector("small").textContent = "For the first time, there is nobody inside the green circle.";
-    bobbyReact("A saída! CARALHO, FINALMENTE! Não encosta em mais nada!", true, "mood-relieved");
-    window.setTimeout(() => document.body.classList.add("bobby-escaped"), 2300);
-    window.setTimeout(() => { layer.classList.remove("active"); $(".escape-message").classList.add("show"); }, 3200);
+    bobbyReact("A saída! CARALHO, FINALMENTE! Eu... eu achei que nunca fosse ver isso.", true, "mood-relieved");
+    document.body.classList.add("escape-sequence");
+    window.setTimeout(() => { layer.classList.remove("active"); $(".escape-cinematic").classList.add("show"); }, 1700);
+    window.setTimeout(() => document.body.classList.add("bobby-escaped"), 2900);
   }
   window.addEventListener("bobby:escape", triggerEscape);
+  $(".escape-close")?.addEventListener("click", () => location.reload());
 
   function hitSite(x, y) {
     bullets = [];

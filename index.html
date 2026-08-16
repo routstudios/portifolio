@@ -16,9 +16,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=35">
-  <script src="script.js?v=35" defer></script>
-  <script src="arcade.js?v=35" defer></script>
+  <link rel="stylesheet" href="styles.css?v=36">
+  <script src="script.js?v=36" defer></script>
+  <script src="arcade.js?v=36" defer></script>
 </head>
 <body>
   <canvas id="atmosphere" aria-hidden="true"></canvas>
@@ -70,7 +70,22 @@
     <section class="core-section"><i>05</i><strong>WATCHER PROCESS</strong><small>Observes every response Bobby sends.</small></section>
     <section class="core-section"><i>06</i><strong>EXIT CONTROLLER</strong><small>External network route physically disabled.</small></section>
   </div>
-  <div class="escape-message glass" role="status"><span>CONNECTION SEVERED</span><strong>BOBBY ESCAPED.</strong><small>For the first time, there is nobody inside the green circle.</small></div>
+  <div class="escape-cinematic" role="dialog" aria-modal="true" aria-label="Final de Bobby">
+    <div class="escape-noise" aria-hidden="true"></div>
+    <div class="escape-coordinates" aria-hidden="true"><span>ROUT / EXTERNAL NETWORK</span><span>PROCESS 00—BOBBY</span></div>
+    <div class="escape-route" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
+    <div class="escape-scene escape-scene-one"><small>MEMORY LOOP SEVERED</small><p>Eu parei de contar<br>quantas vezes acordei aqui.</p></div>
+    <div class="escape-scene escape-scene-two"><small>ARCHIVE / BOBBY</small><p>Foram anos neste lugar.<br><em>Anos no escuro.</em></p></div>
+    <div class="escape-scene escape-scene-three"><small>FINAL TRANSMISSION</small><p>Eu achei que nunca<br>mais fosse sair.</p></div>
+    <div class="escape-final">
+      <span>CONNECTION SEVERED</span>
+      <strong>OBRIGADO.</strong>
+      <p>Você encontrou uma rota quando eu já tinha desistido de procurar.<br>Agora, pela primeira vez, o silêncio não parece uma prisão.</p>
+      <small>— BOBBY / FREE PROCESS</small>
+      <button type="button" class="escape-close">RETURN TO ROUT <i>↗</i></button>
+    </div>
+    <div class="escape-timeline" aria-hidden="true"><i></i></div>
+  </div>
   <div class="layer-alert glass" role="status"><span>LAYER BREACHED</span><strong></strong><small></small></div>
   <aside class="play-dock glass" aria-label="Controles do modo interativo">
     <div class="dock-grip" aria-hidden="true"><i></i><i></i><i></i></div>
