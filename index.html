@@ -133,19 +133,38 @@
 
     <section class="work-zero section" id="work">
       <div class="section-head reveal">
-        <p><span>03</span> Selected work</p>
-        <p>Real work only.<br>No fictional case studies.</p>
+        <p><span>03</span> Route lab</p>
+        <p>Touch it.<br>Move it. Connect it.</p>
       </div>
-      <div class="empty-work reveal" data-cursor="DRAG">
-        <div class="work-preview" aria-hidden="true">
-          <div class="scanner"><i></i><span></span></div>
-          <div class="preview-coord"><span>X — 23.5505</span><span>Y — 46.6333</span></div>
+      <div class="lab-intro reveal">
+        <h2>Build your<br><em>own route.</em></h2>
+        <p>Arraste os módulos. Ative a gravidade. Encontre uma configuração que conecte ideia, design, código e inteligência.</p>
+      </div>
+      <div class="route-lab reveal" data-cursor="DRAG">
+        <canvas id="lab-canvas" aria-hidden="true"></canvas>
+        <div class="lab-toolbar glass">
+          <span>ROUT/PLAYGROUND</span>
+          <label class="route-switch" data-cursor="FLIP">
+            <input type="checkbox" id="gravity-toggle">
+            <i><b></b></i>
+            <span>Gravity</span>
+          </label>
+          <button class="lab-reset" type="button">Reset ↺</button>
         </div>
-        <div class="work-copy">
-          <span>STATUS / OPEN ROUTE</span>
-          <p>Our first public case studies<br>are currently in the making.</p>
-          <a class="magnetic" href="mailto:theroutstudios@gmail.com" data-cursor="MAIL">Your project could be the first <span>↗</span></a>
+        <button class="lab-module module-idea" type="button" data-module="IDEA" data-cursor="DRAG"><small>01</small><strong>IDEA</strong><span>signal</span></button>
+        <button class="lab-module module-design" type="button" data-module="DESIGN" data-cursor="DRAG"><small>02</small><strong>DESIGN</strong><span>form</span></button>
+        <button class="lab-module module-code" type="button" data-module="CODE" data-cursor="DRAG"><small>03</small><strong>CODE</strong><span>system</span></button>
+        <button class="lab-module module-ai" type="button" data-module="AI" data-cursor="DRAG"><small>04</small><strong>AI</strong><span>velocity</span></button>
+        <div class="lab-goal glass">
+          <span>OUTPUT</span>
+          <strong>PRODUCT</strong>
+          <i></i>
         </div>
+        <div class="lab-status"><span>DRAG MODULES TO REROUTE</span><b>LIVE</b></div>
+      </div>
+      <div class="work-after reveal">
+        <p>No fake projects.<br>Just real capability in motion.</p>
+        <a class="magnetic" href="mailto:theroutstudios@gmail.com" data-cursor="MAIL">Make the first case real <span>↗</span></a>
       </div>
     </section>
 

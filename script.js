@@ -194,6 +194,159 @@ routeNodes.forEach((node) => node.addEventListener("click", () => {
   if (visitedNodes.size === 4) showAchievement("ROUTE COMPLETE", "Idea connected to launch.");
 }));
 
+const lab = document.querySelector(".route-lab");
+const labCanvas = document.querySelector("#lab-canvas");
+const labContext = labCanvas?.getContext("2d");
+const labModules = [...document.querySelectorAll(".lab-module")];
+const labGoal = document.querySelector(".lab-goal");
+const gravityToggle = document.querySelector("#gravity-toggle");
+const labReset = document.querySelector(".lab-reset");
+let labWidth = 0;
+let labHeight = 0;
+let gravityEnabled = false;
+let labComplete = false;
+
+const moduleStates = labModules.map((element) => ({
+  element,
+  x: 0,
+  y: 0,
+  vx: 0,
+  vy: 0,
+  active: false,
+  pointerId: null,
+  lastX: 0,
+  lastY: 0,
+}));
+
+function resizeLab() {
+  if (!labCanvas || !lab) return;
+  const ratio = Math.min(devicePixelRatio || 1, 2);
+  labWidth = lab.clientWidth;
+  labHeight = lab.clientHeight;
+  labCanvas.width = labWidth * ratio;
+  labCanvas.height = labHeight * ratio;
+  labContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+moduleStates.forEach((state) => {
+  const { element } = state;
+  element.addEventListener("pointerdown", (event) => {
+    state.active = true;
+    state.pointerId = event.pointerId;
+    state.lastX = event.clientX;
+    state.lastY = event.clientY;
+    state.vx = 0;
+    state.vy = 0;
+    element.classList.add("dragging");
+    element.setPointerCapture(event.pointerId);
+  });
+  element.addEventListener("pointermove", (event) => {
+    if (!state.active || event.pointerId !== state.pointerId) return;
+    const dx = event.clientX - state.lastX;
+    const dy = event.clientY - state.lastY;
+    state.x += dx;
+    state.y += dy;
+    state.vx = dx * 0.65;
+    state.vy = dy * 0.65;
+    state.lastX = event.clientX;
+    state.lastY = event.clientY;
+  });
+  const release = (event) => {
+    if (!state.active || event.pointerId !== state.pointerId) return;
+    state.active = false;
+    element.classList.remove("dragging");
+  };
+  element.addEventListener("pointerup", release);
+  element.addEventListener("pointercancel", release);
+});
+
+gravityToggle?.addEventListener("change", () => {
+  gravityEnabled = gravityToggle.checked;
+  lab?.classList.toggle("gravity-on", gravityEnabled);
+  document.querySelector(".lab-status span").textContent = gravityEnabled ? "GRAVITY ENABLED — THROW A MODULE" : "DRAG MODULES TO REROUTE";
+});
+
+labReset?.addEventListener("click", () => {
+  moduleStates.forEach((state) => {
+    state.vx += (0 - state.x) * 0.16;
+    state.vy += (0 - state.y) * 0.16;
+    state.x *= 0.25;
+    state.y *= 0.25;
+  });
+  gravityToggle.checked = false;
+  gravityEnabled = false;
+  lab?.classList.remove("gravity-on", "complete");
+  labComplete = false;
+  document.querySelector(".lab-status span").textContent = "DRAG MODULES TO REROUTE";
+});
+
+function updateLabPhysics() {
+  if (!lab) return;
+  moduleStates.forEach((state) => {
+    if (!state.active) {
+      if (gravityEnabled && !reducedMotion) state.vy += 0.16;
+      state.x += state.vx;
+      state.y += state.vy;
+      state.vx *= gravityEnabled ? 0.985 : 0.91;
+      state.vy *= gravityEnabled ? 0.985 : 0.91;
+    }
+    const baseLeft = state.element.offsetLeft;
+    const baseTop = state.element.offsetTop;
+    const width = state.element.offsetWidth;
+    const height = state.element.offsetHeight;
+    const minX = -baseLeft + 8;
+    const maxX = labWidth - baseLeft - width - 8;
+    const minY = -baseTop + 84;
+    const maxY = labHeight - baseTop - height - 38;
+    if (state.x < minX) { state.x = minX; state.vx *= -0.58; }
+    if (state.x > maxX) { state.x = maxX; state.vx *= -0.58; }
+    if (state.y < minY) { state.y = minY; state.vy *= -0.58; }
+    if (state.y > maxY) { state.y = maxY; state.vy *= -0.62; }
+    state.element.style.transform = `translate3d(${state.x}px,${state.y}px,0) rotate(${clamp(state.vx * 0.32,-4,4)}deg)`;
+  });
+}
+
+function drawLab() {
+  if (!labContext || !lab || !labGoal) return;
+  labContext.clearRect(0, 0, labWidth, labHeight);
+  const labRect = lab.getBoundingClientRect();
+  const points = moduleStates.map((state) => {
+    const rect = state.element.getBoundingClientRect();
+    return { x: rect.left - labRect.left + rect.width / 2, y: rect.top - labRect.top + rect.height / 2 };
+  });
+  const goalRect = labGoal.getBoundingClientRect();
+  points.push({ x: goalRect.left - labRect.left + goalRect.width / 2, y: goalRect.top - labRect.top + goalRect.height / 2 });
+  let connected = true;
+  labContext.lineCap = "round";
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const a = points[index];
+    const b = points[index + 1];
+    const distance = Math.hypot(b.x - a.x, b.y - a.y);
+    const active = distance < Math.min(265, labWidth * 0.3);
+    if (!active) connected = false;
+    labContext.beginPath();
+    labContext.moveTo(a.x, a.y);
+    labContext.bezierCurveTo((a.x + b.x) / 2, a.y, (a.x + b.x) / 2, b.y, b.x, b.y);
+    labContext.setLineDash(active ? [] : [4, 8]);
+    labContext.strokeStyle = active ? "rgba(25,226,118,.72)" : "rgba(109,255,179,.14)";
+    labContext.lineWidth = active ? 1.4 : 1;
+    labContext.shadowColor = active ? "rgba(25,226,118,.55)" : "transparent";
+    labContext.shadowBlur = active ? 12 : 0;
+    labContext.stroke();
+  }
+  labContext.setLineDash([]);
+  labContext.shadowBlur = 0;
+  if (connected && !labComplete) {
+    labComplete = true;
+    lab.classList.add("complete");
+    document.querySelector(".lab-status span").textContent = "ROUTE COMPLETE — PRODUCT ONLINE";
+    showAchievement("SYSTEM CONNECTED", "You built a better route.");
+  } else if (!connected && labComplete) {
+    labComplete = false;
+    lab.classList.remove("complete");
+  }
+}
+
 let routeWidth = 0;
 let routeHeight = 0;
 function resizeRoute() {
@@ -329,12 +482,15 @@ function frame(time) {
     drawParticles();
     drawRoute(time);
   }
+  updateLabPhysics();
+  drawLab();
   pointer.speed *= 0.9;
   window.requestAnimationFrame(frame);
 }
 
 resizeAtmosphere();
 resizeRoute();
+resizeLab();
 if (reducedMotion) drawRoute(0);
-window.addEventListener("resize", () => { resizeAtmosphere(); resizeRoute(); }, { passive: true });
+window.addEventListener("resize", () => { resizeAtmosphere(); resizeRoute(); resizeLab(); }, { passive: true });
 window.requestAnimationFrame(frame);
