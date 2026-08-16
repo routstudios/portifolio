@@ -28,9 +28,12 @@
   let fragments = [];
   const MAX_PARTICLES = 150;
   const MAX_FRAGMENTS = 72;
-  const ESCAPE_DAMAGE = 12;
+  const WALL_LAYERS = ["SURFACE GLASS", "CARBON SHELL", "THERMAL MESH", "SIGNAL GRID", "CORE ARMOR", "CONTAINMENT LOCK"];
+  const HITS_PER_LAYER = 5;
+  const ESCAPE_DAMAGE = WALL_LAYERS.length * HITS_PER_LAYER;
   const damaged = new Set();
   let escaping = false;
+  let wallHits = 0;
 
   /* Bobby local AI: contextual intent scoring + short-term memory. */
   const aiState = { topic: "intro", history: [] };
@@ -154,12 +157,14 @@
 
   function start() {
     if (running || document.body.classList.contains("cutscene-playing")) return;
-    running = true; escaping = false; score = 0; reloading = false; keys.clear();
+    running = true; escaping = false; wallHits = 0; score = 0; reloading = false; keys.clear();
     player.x = innerWidth / 2; player.y = innerHeight * .72;
     $(".game-hud strong b").textContent = "000";
     $(".reload-status").textContent = "BAZOOKA READY";
     document.body.classList.add("game-active");
     document.body.style.setProperty("--integrity", "100%");
+    document.body.dataset.wallLayer = "0";
+    $(".site-integrity em").textContent = WALL_LAYERS[0];
     layer.classList.add("active", "aiming");
     system.classList.remove("open");
     $(".control-hint").classList.add("hidden");
@@ -239,11 +244,26 @@
     while (fragments.length > MAX_FRAGMENTS) fragments.shift().element.remove();
     target.classList.add("site-destroyed");
     score += 50; $(".game-hud strong b").textContent = String(score).padStart(3, "0");
-    const integrity = Math.max(0, 100 - Math.round(damaged.size / ESCAPE_DAMAGE * 100));
-    document.body.style.setProperty("--integrity", `${integrity}%`);
     burst(impactX, impactY, "#19e276", 28);
-    if (damaged.size >= ESCAPE_DAMAGE) window.setTimeout(triggerEscape, 420);
   }
+
+  function damageWall() {
+    wallHits += 1;
+    const layerIndex = Math.min(WALL_LAYERS.length - 1, Math.floor(wallHits / HITS_PER_LAYER));
+    const layerProgress = wallHits % HITS_PER_LAYER;
+    document.body.dataset.wallLayer = String(layerIndex);
+    document.body.style.setProperty("--integrity", wallHits >= ESCAPE_DAMAGE ? "0%" : `${Math.max(0, 100 - layerProgress / HITS_PER_LAYER * 100)}%`);
+    $(".site-integrity em").textContent = WALL_LAYERS[layerIndex];
+    if (wallHits < ESCAPE_DAMAGE && layerProgress === 0) {
+      const alert = $(".layer-alert");
+      alert.querySelector("strong").textContent = WALL_LAYERS[layerIndex];
+      alert.querySelector("small").textContent = `${WALL_LAYERS.length - layerIndex} security layers remaining`;
+      alert.classList.remove("show"); void alert.offsetWidth; alert.classList.add("show");
+      window.setTimeout(() => alert.classList.remove("show"), 2100);
+    }
+    if (wallHits >= ESCAPE_DAMAGE) window.setTimeout(triggerEscape, 420);
+  }
+  window.addEventListener("bobby:damage-wall", damageWall);
 
   function triggerEscape() {
     if (escaping) return;
@@ -273,12 +293,14 @@
       if (collateral) break;
     }
     explode(x, y);
+    damageWall();
   }
 
   function repair() {
     if (escaping) return;
     damaged.forEach((element) => { element.classList.remove("site-destroyed", "cascade-hit"); element.style.removeProperty("rotate"); });
     damaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
+    wallHits = 0; document.body.dataset.wallLayer = "0"; $(".site-integrity em").textContent = WALL_LAYERS[0];
     document.body.style.setProperty("--integrity", "100%");
     document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
     document.querySelectorAll(".scorch-mark").forEach((mark) => mark.remove());
