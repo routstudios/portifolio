@@ -23,6 +23,9 @@
   <canvas id="atmosphere" aria-hidden="true"></canvas>
   <div class="grain" aria-hidden="true"></div>
   <div class="cursor-light" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true"><span></span></div>
+  <div class="scroll-progress" aria-hidden="true"><i></i></div>
+  <div class="achievement" role="status" aria-live="polite"><small>ROUTE FOUND</small><strong>Curiosity rewarded.</strong></div>
 
   <div class="intro" aria-hidden="true">
     <div class="intro-line"><span></span><i></i><span></span></div>
@@ -32,13 +35,13 @@
   </div>
 
   <header class="site-header">
-    <a class="logo" href="#top" aria-label="ROUT STUDIOS — início">ROUT<span>.</span></a>
+    <a class="logo" href="#top" aria-label="ROUT STUDIOS — início" data-cursor="PLAY">ROUT<span>.</span></a>
     <nav aria-label="Navegação principal">
-      <a href="#services">Services</a>
-      <a href="#process">Process</a>
-      <a href="#about">About</a>
+      <a href="#services" data-cursor="GO">Services</a>
+      <a href="#process" data-cursor="GO">Process</a>
+      <a href="#about" data-cursor="GO">About</a>
     </nav>
-    <a class="header-cta" href="mailto:theroutstudios@gmail.com">Start a project <span>↗</span></a>
+    <a class="header-cta magnetic" href="mailto:theroutstudios@gmail.com" data-cursor="MAIL">Start a project <span>↗</span></a>
     <button class="menu" type="button" aria-expanded="false" aria-controls="mobile-nav"><span>Menu</span><i></i></button>
   </header>
 
@@ -58,30 +61,28 @@
       </div>
 
       <div class="hero-copy">
-        <p class="hero-overline" data-split>Find a better</p>
+        <p class="hero-overline">THERE'S ALWAYS</p>
         <div class="hero-word">
-          <h1>ROUT<span>.</span></h1>
-          <div class="refraction" aria-hidden="true">ROUT.</div>
+          <h1>A BETTER<br><b>ROUT<span>.</span></b></h1>
+          <div class="refraction" aria-hidden="true">BETTER ROUT.</div>
         </div>
       </div>
 
-      <div class="route-system" aria-hidden="true">
+      <div class="route-system">
         <div class="route-glow"></div>
-        <div class="route route-one"></div>
-        <div class="route route-two"></div>
-        <div class="route route-three"></div>
-        <div class="route-node node-one"><i></i><span>IDEA</span></div>
-        <div class="route-node node-two"><i></i><span>ROUTE</span></div>
-        <div class="route-node node-three"><i></i><span>BUILD</span></div>
-        <div class="route-node node-four"><i></i><span>SHIP</span></div>
-        <div class="route-pulse"></div>
+        <canvas id="route-canvas" aria-hidden="true"></canvas>
+        <button class="route-node node-one" type="button" data-node="0" aria-label="Nó da rota: ideia"><i></i><span>IDEA</span></button>
+        <button class="route-node node-two" type="button" data-node="1" aria-label="Nó da rota: direção"><i></i><span>ROUTE</span></button>
+        <button class="route-node node-three" type="button" data-node="2" aria-label="Nó da rota: construção"><i></i><span>BUILD</span></button>
+        <button class="route-node node-four" type="button" data-node="3" aria-label="Nó da rota: lançamento"><i></i><span>SHIP</span></button>
+        <div class="route-hint">Connect the nodes <span>0/4</span></div>
       </div>
 
       <div class="hero-bottom">
         <p>Design, code and AI for ideas<br>that need to <em>move.</em></p>
         <div class="hero-actions">
-          <a class="pill primary" href="mailto:theroutstudios@gmail.com"><span>Start a project</span><i>↗</i></a>
-          <a class="link-arrow" href="#services">Explore the route <span>↓</span></a>
+          <a class="pill primary magnetic" href="mailto:theroutstudios@gmail.com" data-cursor="MAIL"><span>Start a project</span><i>↗</i></a>
+          <a class="link-arrow" href="#services" data-cursor="GO">Explore the route <span>↓</span></a>
         </div>
       </div>
       <div class="hero-code" aria-hidden="true"><span>LAT 23.5505° S</span><span>LNG 46.6333° W</span><span>SYS/ROUT/01</span></div>
@@ -130,15 +131,21 @@
       </div>
     </section>
 
-    <section class="work-zero section">
+    <section class="work-zero section" id="work">
       <div class="section-head reveal">
         <p><span>03</span> Selected work</p>
         <p>Real work only.<br>No fictional case studies.</p>
       </div>
-      <div class="empty-work reveal">
-        <div class="scanner" aria-hidden="true"><i></i><span></span></div>
-        <p>Our first public case studies<br>are currently in the making.</p>
-        <a href="mailto:theroutstudios@gmail.com">Your project could be the first <span>↗</span></a>
+      <div class="empty-work reveal" data-cursor="DRAG">
+        <div class="work-preview" aria-hidden="true">
+          <div class="scanner"><i></i><span></span></div>
+          <div class="preview-coord"><span>X — 23.5505</span><span>Y — 46.6333</span></div>
+        </div>
+        <div class="work-copy">
+          <span>STATUS / OPEN ROUTE</span>
+          <p>Our first public case studies<br>are currently in the making.</p>
+          <a class="magnetic" href="mailto:theroutstudios@gmail.com" data-cursor="MAIL">Your project could be the first <span>↗</span></a>
+        </div>
       </div>
     </section>
 
@@ -166,7 +173,7 @@
       </div>
       <div class="email-panel glass reveal">
         <span>PROJECT INQUIRIES</span>
-        <a href="mailto:theroutstudios@gmail.com">theroutstudios@gmail.com <i>↗</i></a>
+        <a class="magnetic" href="mailto:theroutstudios@gmail.com" data-cursor="MAIL">theroutstudios@gmail.com <i>↗</i></a>
         <button class="copy-email" type="button" data-email="theroutstudios@gmail.com"><span>Copy email</span><i>+</i></button>
       </div>
     </section>
