@@ -29,10 +29,11 @@
   const MAX_PARTICLES = 150;
   const MAX_FRAGMENTS = 72;
   const WALL_LAYERS = ["SURFACE GLASS", "CARBON SHELL", "THERMAL MESH", "SIGNAL GRID", "CORE ARMOR", "CONTAINMENT LOCK"];
-  const REQUIRED_CORE_BREACHES = 4;
+  const BREACHES_PER_LAYER = 4;
   const damaged = new Set();
   let escaping = false;
-  let coreBreaches = 0;
+  let activeLayer = 0;
+  let layerHits = 0;
 
   /* Bobby local AI: contextual intent scoring + short-term memory. */
   const aiState = { topic: "intro", history: [] };
@@ -156,7 +157,7 @@
 
   function start() {
     if (running || document.body.classList.contains("cutscene-playing")) return;
-    running = true; escaping = false; coreBreaches = 0; score = 0; reloading = false; keys.clear();
+    running = true; escaping = false; activeLayer = 0; layerHits = 0; score = 0; reloading = false; keys.clear();
     player.x = innerWidth / 2; player.y = innerHeight * .72;
     $(".game-hud strong b").textContent = "000";
     $(".reload-status").textContent = "BAZOOKA READY";
@@ -189,8 +190,8 @@
     if (reloading) return false;
     const angle = Math.atan2(y - player.y, x - player.x);
     bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 7.2, vy: Math.sin(angle) * 7.2, life: 1.6 });
-    player.x = clamp(player.x - Math.cos(angle) * 70, 25, innerWidth - 25);
-    player.y = clamp(player.y - Math.sin(angle) * 70, 75, innerHeight - 25);
+    player.x = clamp(player.x - Math.cos(angle) * 95, 25, innerWidth - 25);
+    player.y = clamp(player.y - Math.sin(angle) * 95, 75, innerHeight - 25);
     reloading = true; reloadStarted = performance.now();
     bobby.classList.remove("recoil", "muzzle"); void bobby.offsetWidth; bobby.classList.add("recoil", "muzzle", "reloading");
     document.body.classList.add("rocket-shock");
@@ -206,8 +207,8 @@
     const scorch = document.createElement("i");
     scorch.className = "scorch-mark"; scorch.style.left = `${x + scrollX}px`; scorch.style.top = `${y + scrollY}px`;
     document.body.append(scorch); window.setTimeout(() => scorch.remove(), 18000);
-    for (let i = 0; i < 54; i += 1) {
-      const angle = rand(0, Math.PI * 2), speed = rand(1.5, 10);
+    for (let i = 0; i < 72; i += 1) {
+      const angle = rand(0, Math.PI * 2), speed = rand(2.5, 14);
       const smoke = Math.random() > .42;
       particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: smoke ? rand(2.8, 5.5) : rand(.7, 1.7), color: smoke ? "#202923" : "#ff8a24", r: rand(5, 20), smoke });
     }
@@ -241,8 +242,9 @@
 
   function damageWall(x = innerWidth / 2, y = innerHeight / 2) {
     const docX = x + scrollX, docY = y + scrollY;
-    let breach = [...document.querySelectorAll(".wall-breach:not(.complete)")].find((hole) => Math.hypot(Number(hole.dataset.x) - docX, Number(hole.dataset.y) - docY) < 145);
-    if (!breach) {
+    const nearby = [...document.querySelectorAll(".wall-breach")].find((hole) => Math.hypot(Number(hole.dataset.x) - docX, Number(hole.dataset.y) - docY) < 165);
+    let breach = nearby && Number(nearby.dataset.depth) === activeLayer ? nearby : null;
+    if (!breach && activeLayer === 0 && !nearby) {
       breach = document.createElement("div");
       breach.className = "wall-breach"; breach.dataset.x = String(docX); breach.dataset.y = String(docY); breach.dataset.depth = "0";
       breach.style.left = `${docX}px`; breach.style.top = `${docY}px`; breach.style.setProperty("--breach-rotate", `${rand(-12, 12)}deg`);
@@ -251,25 +253,38 @@
       const holes = [...document.querySelectorAll(".wall-breach")];
       if (holes.length > 10) holes.find((hole) => !hole.classList.contains("complete") && hole !== breach)?.remove();
     }
-    const depth = Math.min(WALL_LAYERS.length, Number(breach.dataset.depth) + 1);
+    const alert = $(".layer-alert");
+    if (!breach) {
+      alert.querySelector("strong").textContent = nearby ? "AREA ALREADY BREACHED" : `FIND ${WALL_LAYERS[activeLayer]}`;
+      alert.querySelector("small").textContent = nearby ? "Destroy another area before going deeper" : "Return to one of the exposed tunnels";
+      alert.classList.remove("show"); void alert.offsetWidth; alert.classList.add("show");
+      window.setTimeout(() => alert.classList.remove("show"), 1500);
+      return;
+    }
+    const depth = activeLayer + 1;
     breach.dataset.depth = String(depth);
     breach.querySelectorAll(".material-layer").forEach((material, index) => material.classList.toggle("removed", index < depth));
-    const nextLayer = WALL_LAYERS[depth] || "CORE EXPOSED";
-    $(".site-integrity em").textContent = nextLayer;
-    document.body.style.setProperty("--integrity", `${Math.max(0, 100 - depth / WALL_LAYERS.length * 100)}%`);
-    document.body.dataset.wallLayer = String(Math.min(depth, WALL_LAYERS.length - 1));
-    const alert = $(".layer-alert");
-    alert.querySelector("strong").textContent = depth === WALL_LAYERS.length ? "CORE EXPOSED" : nextLayer;
-    alert.querySelector("small").textContent = depth === WALL_LAYERS.length ? "Tunnel complete" : `${WALL_LAYERS.length - depth} physical layers below this hole`;
+    layerHits += 1;
+    document.body.style.setProperty("--integrity", `${Math.max(0, 100 - layerHits / BREACHES_PER_LAYER * 100)}%`);
+    alert.querySelector("strong").textContent = `${WALL_LAYERS[activeLayer]} DAMAGED`;
+    alert.querySelector("small").textContent = `${BREACHES_PER_LAYER - layerHits} separate areas remaining`;
     alert.classList.remove("show"); void alert.offsetWidth; alert.classList.add("show");
     window.setTimeout(() => alert.classList.remove("show"), 1500);
-    if (depth === WALL_LAYERS.length) {
-      breach.classList.add("complete"); coreBreaches += 1;
-      score += 250; $(".game-hud strong b").textContent = String(score).padStart(3, "0");
-      if (coreBreaches >= REQUIRED_CORE_BREACHES) window.setTimeout(triggerEscape, 500);
+    if (depth === WALL_LAYERS.length) breach.classList.add("complete");
+    if (layerHits >= BREACHES_PER_LAYER) {
+      activeLayer += 1; layerHits = 0; score += 250;
+      $(".game-hud strong b").textContent = String(score).padStart(3, "0");
+      document.body.dataset.wallLayer = String(Math.min(activeLayer, WALL_LAYERS.length - 1));
+      document.body.style.setProperty("--integrity", "100%");
+      if (activeLayer >= WALL_LAYERS.length) window.setTimeout(triggerEscape, 500);
+      else {
+        $(".site-integrity em").textContent = WALL_LAYERS[activeLayer];
+        alert.querySelector("strong").textContent = `${WALL_LAYERS[activeLayer]} EXPOSED`;
+        alert.querySelector("small").textContent = "Previous layer destroyed across the site";
+      }
     }
   }
-  window.addEventListener("bobby:damage-wall", () => damageWall());
+  window.addEventListener("bobby:damage-wall", (event) => damageWall(event.detail?.x, event.detail?.y));
 
   function triggerEscape() {
     if (escaping) return;
@@ -295,8 +310,8 @@
     for (const nearby of document.querySelectorAll(damageTargets)) {
       if (damaged.has(nearby) || nearby.closest(".bobby-system,.game-layer")) continue;
       const rect = nearby.getBoundingClientRect();
-      if (collateral < 1 && Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y) < 135) { shatter(nearby, x, y); collateral += 1; }
-      if (collateral) break;
+      if (collateral < 2 && Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y) < 190) { shatter(nearby, x, y); collateral += 1; }
+      if (collateral >= 2) break;
     }
     explode(x, y);
     damageWall(x, y);
@@ -306,7 +321,7 @@
     if (escaping) return;
     damaged.forEach((element) => { element.classList.remove("site-destroyed", "cascade-hit"); element.style.removeProperty("rotate"); });
     damaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
-    coreBreaches = 0; document.body.dataset.wallLayer = "0"; $(".site-integrity em").textContent = WALL_LAYERS[0];
+    activeLayer = 0; layerHits = 0; document.body.dataset.wallLayer = "0"; $(".site-integrity em").textContent = WALL_LAYERS[0];
     document.body.style.setProperty("--integrity", "100%");
     document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
     document.querySelectorAll(".scorch-mark").forEach((mark) => mark.remove());
