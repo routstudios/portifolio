@@ -48,6 +48,7 @@
   let memoryInput = 0;
   let memoryReveal = 0;
   let damage = new Map();
+  let siteFragments = [];
   let gameFrame = 0;
 
   function speak(text, action) {
@@ -112,7 +113,7 @@
     const baseY = innerHeight - (innerWidth < 800 ? 45 : 60);
     system.style.translate = `${player.x - baseX}px ${player.y - baseY}px`;
     const angle = Math.atan2(pointer.y - player.y, pointer.x - player.x) * 180 / Math.PI;
-    document.body.style.setProperty("--gun-angle", `${angle}deg`);
+    document.body.style.setProperty("--body-angle", `${angle}deg`);
   }
 
   function setupEntities(mode) {
@@ -144,6 +145,7 @@
     document.body.classList.remove("game-active");
     layer.classList.remove("active", "aiming");
     system.style.translate = "";
+    bobby.style.removeProperty("transform");
     system.classList.add("open");
     speak(message);
   }
@@ -151,9 +153,10 @@
   function repairSite() {
     damage.forEach((_, element) => {
       element.classList.remove("site-damaged", "site-destroyed");
-      element.style.removeProperty("--damage-opacity");
     });
     damage.clear();
+    siteFragments.forEach((fragment) => fragment.remove());
+    siteFragments = [];
     document.querySelectorAll(".impact-mark").forEach((mark) => mark.remove());
   }
 
@@ -173,7 +176,63 @@
   function shoot(x, y) {
     const angle = Math.atan2(y - player.y, x - player.x);
     bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 15, vy: Math.sin(angle) * 15, life: 1.2 });
+    bobby.classList.remove("recoil", "muzzle");
+    void bobby.offsetWidth;
+    bobby.classList.add("recoil", "muzzle");
+    window.setTimeout(() => bobby.classList.remove("recoil", "muzzle"), 130);
     burst(player.x, player.y, "#baffd9", 4);
+  }
+
+  function chipImpact(x, y, target) {
+    const color = getComputedStyle(target).color || "#dfffea";
+    for (let index = 0; index < 9; index += 1) {
+      const chip = document.createElement("i");
+      chip.className = "damage-chip";
+      chip.style.left = `${x}px`; chip.style.top = `${y}px`;
+      chip.style.setProperty("--chip-size", `${rand(3, 10)}px`);
+      chip.style.setProperty("--chip-color", index % 3 ? color : "#19e276");
+      chip.style.setProperty("--chip-x", `${rand(-75, 75)}px`);
+      chip.style.setProperty("--chip-y", `${rand(-80, 110)}px`);
+      chip.style.setProperty("--chip-r", `${rand(-240, 240)}deg`);
+      document.body.append(chip);
+      chip.addEventListener("animationend", () => chip.remove(), { once: true });
+    }
+  }
+
+  function shatterElement(target, impactX, impactY) {
+    const rect = target.getBoundingClientRect();
+    const computed = getComputedStyle(target);
+    const columns = rect.width > 420 ? 5 : 4;
+    const rows = rect.height > 180 ? 4 : 3;
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const clone = target.cloneNode(true);
+        clone.removeAttribute("id");
+        clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+        clone.classList.remove("reveal", "visible", "play-draggable", "site-damaged", "site-destroyed");
+        clone.classList.add("site-fragment");
+        Object.assign(clone.style, {
+          left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`,
+          font: computed.font, color: computed.color, lineHeight: computed.lineHeight,
+          letterSpacing: computed.letterSpacing, textAlign: computed.textAlign,
+          opacity: "1", visibility: "visible",
+          clipPath: `inset(${row * 100 / rows}% ${(columns - column - 1) * 100 / columns}% ${(rows - row - 1) * 100 / rows}% ${column * 100 / columns}%)`,
+        });
+        document.body.append(clone); siteFragments.push(clone);
+        const centerX = rect.left + (column + .5) * rect.width / columns;
+        const centerY = rect.top + (row + .5) * rect.height / rows;
+        const forceX = (centerX - impactX) * rand(.45, 1.05) + rand(-55, 55);
+        const forceY = (centerY - impactY) * rand(.25, .7) - rand(45, 125);
+        const rotation = rand(-110, 110);
+        const duration = rand(1050, 1850);
+        clone.animate([
+          { transform: "translate3d(0,0,0) rotate(0deg)", opacity: 1, offset: 0 },
+          { transform: `translate3d(${forceX * .65}px,${forceY}px,0) rotate(${rotation * .55}deg)`, opacity: 1, offset: .48 },
+          { transform: `translate3d(${forceX}px,${Math.max(innerHeight - rect.top + 80, forceY + 350)}px,0) rotate(${rotation * 2.2}deg)`, opacity: 0, offset: 1 },
+        ], { duration, easing: "cubic-bezier(.18,.72,.25,1)", fill: "forwards" });
+      }
+    }
+    target.classList.add("site-destroyed");
   }
 
   function damageSite(x, y) {
@@ -185,8 +244,8 @@
     const hits = (damage.get(target) || 0) + 1;
     damage.set(target, hits);
     target.classList.add("site-damaged");
-    target.style.setProperty("--damage-opacity", String(Math.max(.12, 1 - hits * .2)));
-    if (hits >= 5) { target.classList.add("site-destroyed"); setScore(score + 50); }
+    chipImpact(x, y, target);
+    if (hits >= 3) { shatterElement(target, x, y); setScore(score + 50); }
     else setScore(score + 10);
     const mark = document.createElement("i"); mark.className = "impact-mark"; mark.style.left = `${x - 14}px`; mark.style.top = `${y - 14}px`; document.body.append(mark);
     mark.addEventListener("animationend", () => mark.remove(), { once: true });
