@@ -16,7 +16,12 @@
   const keys = new Set();
   const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
   const player = { x: innerWidth / 2, y: innerHeight * .72, radius: 25, speed: 5.2 };
-  const damageTargets = "header,nav,main>section,main article,main h1,main h2,main h3,main p,main a,main button,.service,.step,.section-head,.services-intro,.process-title,.founders>span,.email-panel,footer,footer p,footer a";
+  const STAGES = [
+    { name: "WEBSITE SHELL", selector: "body>header,main>section,body>footer" },
+    { name: "HARDWARE SYSTEM", selector: ".hardware-world>.hw-component,.hardware-world>.hw-cable,.hardware-world>.motherboard-grid" },
+    { name: "CONTAINMENT CORE", selector: ".core-layer>.core-section,.core-layer>header" },
+  ];
+  const currentTargets = () => STAGES[gameStage].selector;
   let running = false;
   let last = performance.now();
   let score = 0;
@@ -28,12 +33,10 @@
   let fragments = [];
   const MAX_PARTICLES = 150;
   const MAX_FRAGMENTS = 72;
-  const WALL_LAYERS = ["SURFACE GLASS", "CARBON SHELL", "THERMAL MESH", "SIGNAL GRID", "CORE ARMOR", "CONTAINMENT LOCK"];
-  const BREACHES_PER_LAYER = 4;
   const damaged = new Set();
+  const stageDamaged = new Set();
   let escaping = false;
-  let activeLayer = 0;
-  let layerHits = 0;
+  let gameStage = 0;
 
   /* Bobby local AI: contextual intent scoring + short-term memory. */
   const aiState = { topic: "intro", history: [] };
@@ -157,14 +160,15 @@
 
   function start() {
     if (running || document.body.classList.contains("cutscene-playing")) return;
-    running = true; escaping = false; activeLayer = 0; layerHits = 0; score = 0; reloading = false; keys.clear();
+    running = true; escaping = false; gameStage = 0; stageDamaged.clear(); score = 0; reloading = false; keys.clear();
     player.x = innerWidth / 2; player.y = innerHeight * .72;
     $(".game-hud strong b").textContent = "000";
     $(".reload-status").textContent = "BAZOOKA READY";
     document.body.classList.add("game-active");
     document.body.style.setProperty("--integrity", "100%");
-    document.body.dataset.wallLayer = "0";
-    $(".site-integrity em").textContent = WALL_LAYERS[0];
+    document.body.classList.remove("hardware-stage", "core-stage", "hardware-exposed", "bobby-escaped");
+    $(".site-integrity em").textContent = STAGES[0].name;
+    $(".game-name").textContent = "LAYER 01 / WEBSITE";
     layer.classList.add("active", "aiming");
     system.classList.remove("open");
     $(".control-hint").classList.add("hidden");
@@ -219,6 +223,7 @@
   function shatter(target, impactX, impactY) {
     if (damaged.has(target)) return;
     damaged.add(target);
+    stageDamaged.add(target);
     const rect = target.getBoundingClientRect();
     const computed = getComputedStyle(target);
     const impactDocX = impactX + scrollX, impactDocY = impactY + scrollY;
@@ -238,53 +243,34 @@
     target.classList.add("site-destroyed");
     score += 50; $(".game-hud strong b").textContent = String(score).padStart(3, "0");
     burst(impactX, impactY, "#19e276", 28);
+    updateStageIntegrity();
   }
 
-  function damageWall(x = innerWidth / 2, y = innerHeight / 2) {
-    const docX = x + scrollX, docY = y + scrollY;
-    const nearby = [...document.querySelectorAll(".wall-breach")].find((hole) => Math.hypot(Number(hole.dataset.x) - docX, Number(hole.dataset.y) - docY) < 165);
-    let breach = nearby && Number(nearby.dataset.depth) === activeLayer ? nearby : null;
-    if (!breach && activeLayer === 0 && !nearby) {
-      breach = document.createElement("div");
-      breach.className = "wall-breach"; breach.dataset.x = String(docX); breach.dataset.y = String(docY); breach.dataset.depth = "0";
-      breach.style.left = `${docX}px`; breach.style.top = `${docY}px`; breach.style.setProperty("--breach-rotate", `${rand(-12, 12)}deg`);
-      breach.innerHTML = WALL_LAYERS.map((name, index) => `<i class="material-layer material-${index}"><span>${name}</span></i>`).join("") + '<b class="core-window">ROUT CORE</b>';
-      document.body.append(breach);
-      const holes = [...document.querySelectorAll(".wall-breach")];
-      if (holes.length > 10) holes.find((hole) => !hole.classList.contains("complete") && hole !== breach)?.remove();
-    }
-    const alert = $(".layer-alert");
-    if (!breach) {
-      alert.querySelector("strong").textContent = nearby ? "AREA ALREADY BREACHED" : `FIND ${WALL_LAYERS[activeLayer]}`;
-      alert.querySelector("small").textContent = nearby ? "Destroy another area before going deeper" : "Return to one of the exposed tunnels";
-      alert.classList.remove("show"); void alert.offsetWidth; alert.classList.add("show");
-      window.setTimeout(() => alert.classList.remove("show"), 1500);
-      return;
-    }
-    const depth = activeLayer + 1;
-    breach.dataset.depth = String(depth);
-    breach.querySelectorAll(".material-layer").forEach((material, index) => material.classList.toggle("removed", index < depth));
-    layerHits += 1;
-    document.body.style.setProperty("--integrity", `${Math.max(0, 100 - layerHits / BREACHES_PER_LAYER * 100)}%`);
-    alert.querySelector("strong").textContent = `${WALL_LAYERS[activeLayer]} DAMAGED`;
-    alert.querySelector("small").textContent = `${BREACHES_PER_LAYER - layerHits} separate areas remaining`;
-    alert.classList.remove("show"); void alert.offsetWidth; alert.classList.add("show");
-    window.setTimeout(() => alert.classList.remove("show"), 1500);
-    if (depth === WALL_LAYERS.length) breach.classList.add("complete");
-    if (layerHits >= BREACHES_PER_LAYER) {
-      activeLayer += 1; layerHits = 0; score += 250;
-      $(".game-hud strong b").textContent = String(score).padStart(3, "0");
-      document.body.dataset.wallLayer = String(Math.min(activeLayer, WALL_LAYERS.length - 1));
-      document.body.style.setProperty("--integrity", "100%");
-      if (activeLayer >= WALL_LAYERS.length) window.setTimeout(triggerEscape, 500);
-      else {
-        $(".site-integrity em").textContent = WALL_LAYERS[activeLayer];
-        alert.querySelector("strong").textContent = `${WALL_LAYERS[activeLayer]} EXPOSED`;
-        alert.querySelector("small").textContent = "Previous layer destroyed across the site";
-      }
-    }
+  function updateStageIntegrity() {
+    const total = document.querySelectorAll(currentTargets()).length || 1;
+    document.body.style.setProperty("--integrity", `${Math.max(0, 100 - stageDamaged.size / total * 100)}%`);
   }
-  window.addEventListener("bobby:damage-wall", (event) => damageWall(event.detail?.x, event.detail?.y));
+
+  function advanceStage() {
+    const total = document.querySelectorAll(currentTargets()).length;
+    if (stageDamaged.size < total) return;
+    if (gameStage === STAGES.length - 1) { window.setTimeout(triggerEscape, 600); return; }
+    gameStage += 1; stageDamaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
+    document.body.classList.toggle("hardware-stage", gameStage >= 1);
+    document.body.classList.toggle("core-stage", gameStage >= 2);
+    $(".game-name").textContent = `LAYER 0${gameStage + 1} / ${gameStage === 1 ? "HARDWARE" : "CORE"}`;
+    $(".site-integrity em").textContent = STAGES[gameStage].name;
+    document.body.style.setProperty("--integrity", "100%");
+    const alert = $(".layer-alert");
+    alert.querySelector("strong").textContent = `${STAGES[gameStage].name} EXPOSED`;
+    alert.querySelector("small").textContent = "Destroy every section to reach the layer below";
+    alert.classList.remove("show"); void alert.offsetWidth; alert.classList.add("show");
+    window.setTimeout(() => alert.classList.remove("show"), 2300);
+  }
+  window.addEventListener("bobby:clear-stage", () => {
+    document.querySelectorAll(currentTargets()).forEach((target) => { damaged.add(target); stageDamaged.add(target); target.classList.add("site-destroyed"); });
+    advanceStage();
+  });
 
   function triggerEscape() {
     if (escaping) return;
@@ -303,25 +289,26 @@
   function hitSite(x, y) {
     bullets = [];
     const previous = layer.style.visibility; layer.style.visibility = "hidden";
-    const target = document.elementFromPoint(x, y)?.closest(damageTargets);
+    const target = document.elementFromPoint(x, y)?.closest(currentTargets());
     layer.style.visibility = previous;
     if (target && !target.closest(".bobby-system,.game-layer")) shatter(target, x, y);
     let collateral = 0;
-    for (const nearby of document.querySelectorAll(damageTargets)) {
+    for (const nearby of document.querySelectorAll(currentTargets())) {
       if (damaged.has(nearby) || nearby.closest(".bobby-system,.game-layer")) continue;
       const rect = nearby.getBoundingClientRect();
       if (collateral < 2 && Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y) < 190) { shatter(nearby, x, y); collateral += 1; }
       if (collateral >= 2) break;
     }
     explode(x, y);
-    damageWall(x, y);
+    advanceStage();
   }
 
   function repair() {
     if (escaping) return;
     damaged.forEach((element) => { element.classList.remove("site-destroyed", "cascade-hit"); element.style.removeProperty("rotate"); });
     damaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
-    activeLayer = 0; layerHits = 0; document.body.dataset.wallLayer = "0"; $(".site-integrity em").textContent = WALL_LAYERS[0];
+    gameStage = 0; stageDamaged.clear(); $(".site-integrity em").textContent = STAGES[0].name;
+    document.body.classList.remove("hardware-stage", "core-stage", "hardware-exposed", "bobby-escaped");
     document.body.style.setProperty("--integrity", "100%");
     document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
     document.querySelectorAll(".scorch-mark").forEach((mark) => mark.remove());
@@ -330,7 +317,7 @@
 
   function updateFragments(dt) {
     if (!fragments.length) return;
-    const targets = [...document.querySelectorAll(damageTargets)];
+    const targets = [...document.querySelectorAll(currentTargets())];
     fragments.forEach((body) => {
       body.vy += 1180 * dt; body.x += body.vx * dt; body.y += body.vy * dt; body.rotation += body.vr * dt; body.life -= dt;
       const px = body.cx + body.x, py = body.cy + body.y;
