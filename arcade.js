@@ -28,7 +28,9 @@
   let fragments = [];
   const MAX_PARTICLES = 150;
   const MAX_FRAGMENTS = 72;
+  const ESCAPE_DAMAGE = 12;
   const damaged = new Set();
+  let escaping = false;
 
   /* Bobby local AI: contextual intent scoring + short-term memory. */
   const aiState = { topic: "intro", history: [] };
@@ -152,11 +154,12 @@
 
   function start() {
     if (running || document.body.classList.contains("cutscene-playing")) return;
-    running = true; score = 0; reloading = false; keys.clear();
+    running = true; escaping = false; score = 0; reloading = false; keys.clear();
     player.x = innerWidth / 2; player.y = innerHeight * .72;
     $(".game-hud strong b").textContent = "000";
     $(".reload-status").textContent = "BAZOOKA READY";
     document.body.classList.add("game-active");
+    document.body.style.setProperty("--integrity", "100%");
     layer.classList.add("active", "aiming");
     system.classList.remove("open");
     $(".control-hint").classList.add("hidden");
@@ -164,6 +167,7 @@
   }
 
   function stop() {
+    if (escaping) return;
     running = false; reloading = false; keys.clear();
     document.body.classList.remove("game-active", "rocket-shock");
     layer.classList.remove("active", "aiming");
@@ -201,7 +205,7 @@
     const breach = document.createElement("div");
     breach.className = "wall-breach"; breach.style.left = `${x + scrollX}px`; breach.style.top = `${y + scrollY}px`;
     breach.style.setProperty("--breach-rotate", `${rand(-18, 18)}deg`);
-    breach.innerHTML = '<i class="hardware-board"><b></b><b></b><b></b><span></span><span></span><em>ROUT_SYS</em></i>';
+    breach.innerHTML = '<i></i><i></i><i></i>';
     document.body.append(breach);
     const breaches = [...document.querySelectorAll(".wall-breach")];
     while (breaches.length > 8) breaches.shift().remove();
@@ -235,8 +239,25 @@
     while (fragments.length > MAX_FRAGMENTS) fragments.shift().element.remove();
     target.classList.add("site-destroyed");
     score += 50; $(".game-hud strong b").textContent = String(score).padStart(3, "0");
+    const integrity = Math.max(0, 100 - Math.round(damaged.size / ESCAPE_DAMAGE * 100));
+    document.body.style.setProperty("--integrity", `${integrity}%`);
     burst(impactX, impactY, "#19e276", 28);
+    if (damaged.size >= ESCAPE_DAMAGE) window.setTimeout(triggerEscape, 420);
   }
+
+  function triggerEscape() {
+    if (escaping) return;
+    escaping = true; running = false; keys.clear(); bullets = [];
+    layer.classList.remove("aiming");
+    document.body.classList.add("hardware-exposed");
+    const port = $(".escape-port").getBoundingClientRect();
+    const baseX = innerWidth - (innerWidth < 800 ? 45 : 61), baseY = innerHeight - (innerWidth < 800 ? 45 : 60);
+    system.style.translate = `${port.left + port.width / 2 - baseX}px ${port.top + port.height / 2 - baseY}px`;
+    bobby.classList.add("escaping");
+    window.setTimeout(() => document.body.classList.add("bobby-escaped"), 2300);
+    window.setTimeout(() => { layer.classList.remove("active"); $(".escape-message").classList.add("show"); }, 3200);
+  }
+  window.addEventListener("bobby:escape", triggerEscape);
 
   function hitSite(x, y) {
     bullets = [];
@@ -255,8 +276,10 @@
   }
 
   function repair() {
+    if (escaping) return;
     damaged.forEach((element) => { element.classList.remove("site-destroyed", "cascade-hit"); element.style.removeProperty("rotate"); });
     damaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
+    document.body.style.setProperty("--integrity", "100%");
     document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
     document.querySelectorAll(".scorch-mark").forEach((mark) => mark.remove());
     document.querySelectorAll(".wall-breach").forEach((breach) => breach.remove());
