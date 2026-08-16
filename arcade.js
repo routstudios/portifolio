@@ -46,7 +46,6 @@
   const completedMemories = new Set(JSON.parse(localStorage.getItem("rout-bobby-memories") || "[]"));
   const chapterOrder = ["demolition", "hunt", "target", "glitch", "race", "laser", "memory", "orbit", "catch", "dodge"];
   const chapterThresholds = [0, .08, .18, .29, .4, .51, .62, .72, .83, .94];
-  const offeredMemories = new Set(JSON.parse(sessionStorage.getItem("rout-bobby-offered") || "[]"));
   const keys = new Set();
   const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
   const player = { x: innerWidth - 60, y: innerHeight - 60, radius: 24, speed: 5.2 };
@@ -89,7 +88,7 @@
     const q = raw.toLowerCase().trim();
     if (!q) return;
     if (/arcade|jogo|game|jogar|diversão/.test(q)) {
-      speak("Os jogos estão espalhados pelas seções. Continue descendo e procure os pequenos portais GAME; cada área guarda uma mecânica diferente.");
+      speak("A próxima memória aparece durante a navegação. Quando o sinal surgir ao meu lado, pressione WASD ou toque em mim para entrar. São dez capítulos em ordem.");
     } else if (/serviço|fazem|site|landing|app|design|ia/.test(q)) {
       speak("Criamos web design, sites, landing pages, aplicações web e soluções com IA. Posso te levar até essa parte.", () => document.querySelector("#services")?.scrollIntoView({ behavior: "smooth" }));
     } else if (/contato|projeto|email|orçamento|preço|contratar/.test(q)) {
@@ -134,6 +133,9 @@
   function openStory(mode) {
     clearStoryTimers();
     pendingMode = mode;
+    const chapterNumber = chapterOrder.indexOf(mode) + 1;
+    document.querySelector(".memory-ready b").textContent = `${String(chapterNumber).padStart(2, "0")}/10`;
+    system.classList.add("memory-available");
     fillStory(mode);
     storyLayer.classList.add("active");
     storyTimer = window.setTimeout(() => { clearStoryTimers(); storyLayer.classList.remove("active"); }, 10000);
@@ -143,6 +145,7 @@
     if (!pendingMode || running) return;
     const mode = pendingMode;
     pendingMode = "";
+    system.classList.remove("memory-available");
     clearStoryTimers(); storyLayer.classList.remove("active"); startGame(mode);
   }
 
@@ -150,14 +153,13 @@
 
   function maybeTriggerChapter() {
     if (running || pendingMode || storyLayer.classList.contains("active") || document.body.classList.contains("cutscene-playing")) return;
-    const nextIndex = offeredMemories.size;
+    const nextIndex = chapterOrder.findIndex((mode) => !completedMemories.has(mode));
+    if (nextIndex < 0) return;
     if (nextIndex >= chapterOrder.length) return;
     const maxScroll = Math.max(document.documentElement.scrollHeight - innerHeight, 1);
     const progress = scrollY / maxScroll;
     if (progress + .005 < chapterThresholds[nextIndex]) return;
     const mode = chapterOrder[nextIndex];
-    offeredMemories.add(mode);
-    sessionStorage.setItem("rout-bobby-offered", JSON.stringify([...offeredMemories]));
     openStory(mode);
   }
   window.addEventListener("scroll", maybeTriggerChapter, { passive: true });
