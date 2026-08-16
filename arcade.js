@@ -81,22 +81,23 @@
 
   async function getUniversalReply(question, localFallback) {
     try {
-      const nativeAPI = globalThis.LanguageModel || globalThis.ai?.languageModel;
-      if (nativeAPI?.create) {
-        const session = await nativeAPI.create({ initialPrompts: [{ role: "system", content: bobbySystemPrompt }] });
-        const reply = await session.prompt(question);
-        session.destroy?.();
-        if (reply?.trim()) return reply.trim();
-      }
-    } catch (_) { /* Browser model unavailable; use the server route. */ }
-    try {
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 9000);
+      const timeout = window.setTimeout(() => controller.abort(), 12000);
       const response = await fetch("/api/bobby", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question, history: aiState.history.slice(-6) }), signal: controller.signal });
       window.clearTimeout(timeout);
       if (response.ok) {
         const data = await response.json();
         if (data.reply?.trim()) return data.reply.trim();
+      }
+    } catch (_) { /* Try the browser model only if the server is unavailable. */ }
+    try {
+      const nativeAPI = globalThis.LanguageModel || globalThis.ai?.languageModel;
+      if (nativeAPI?.create) {
+        const nativeReply = await Promise.race([
+          (async () => { const session = await nativeAPI.create({ initialPrompts: [{ role: "system", content: bobbySystemPrompt }] }); const reply = await session.prompt(question); session.destroy?.(); return reply; })(),
+          new Promise((_, reject) => window.setTimeout(() => reject(new Error("Native AI timeout")), 1800)),
+        ]);
+        if (nativeReply?.trim()) return nativeReply.trim();
       }
     } catch (_) { /* Keep Bobby functional offline. */ }
     return localFallback;
