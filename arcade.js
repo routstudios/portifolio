@@ -26,6 +26,8 @@
   let bullets = [];
   let particles = [];
   let fragments = [];
+  const MAX_PARTICLES = 150;
+  const MAX_FRAGMENTS = 72;
   const damaged = new Set();
 
   /* Bobby local AI: contextual intent scoring + short-term memory. */
@@ -118,7 +120,7 @@
   window.setTimeout(anxiousMoment, 14000);
 
   function resize() {
-    const ratio = Math.min(devicePixelRatio || 1, 2);
+    const ratio = Math.min(devicePixelRatio || 1, 1.5);
     canvas.width = innerWidth * ratio; canvas.height = innerHeight * ratio;
     canvas.style.width = `${innerWidth}px`; canvas.style.height = `${innerHeight}px`;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -160,6 +162,7 @@
 
   function burst(x, y, color = "#19e276", count = 12) {
     for (let i = 0; i < count; i += 1) particles.push({ x, y, vx: rand(-4, 4), vy: rand(-4, 4), life: rand(.35, .9), color, r: rand(1, 4) });
+    if (particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES);
   }
 
   function launch(x, y) {
@@ -183,11 +186,12 @@
     const scorch = document.createElement("i");
     scorch.className = "scorch-mark"; scorch.style.left = `${x}px`; scorch.style.top = `${y}px`;
     document.body.append(scorch); window.setTimeout(() => scorch.remove(), 18000);
-    for (let i = 0; i < 115; i += 1) {
+    for (let i = 0; i < 54; i += 1) {
       const angle = rand(0, Math.PI * 2), speed = rand(1.5, 10);
       const smoke = Math.random() > .42;
       particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: smoke ? rand(2.8, 5.5) : rand(.7, 1.7), color: smoke ? "#202923" : "#ff8a24", r: rand(5, 20), smoke });
     }
+    if (particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES);
     burst(x, y, "#fff6c4", 45);
   }
 
@@ -196,8 +200,8 @@
     damaged.add(target);
     const rect = target.getBoundingClientRect();
     const computed = getComputedStyle(target);
-    const columns = rect.width > 420 ? 5 : 4;
-    const rows = rect.height > 180 ? 4 : 3;
+    const columns = rect.width > 420 ? 3 : 2;
+    const rows = 2;
     for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
       const clone = target.cloneNode(true);
       clone.removeAttribute("id"); clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
@@ -206,8 +210,9 @@
       document.body.append(clone);
       const cx = rect.left + (column + .5) * rect.width / columns;
       const cy = rect.top + (row + .5) * rect.height / rows;
-      fragments.push({ element: clone, source: target, x: 0, y: 0, vx: ((cx-impactX)*rand(.45,1.05)+rand(-55,55))*2.8, vy: ((cy-impactY)*rand(.25,.7)-rand(45,125))*3.5, rotation: 0, vr: rand(-260,260), cx, cy, life: 5, bounces: 0, hits: new Set() });
+      fragments.push({ element: clone, source: target, x: 0, y: 0, vx: ((cx-impactX)*rand(.45,1.05)+rand(-55,55))*2.8, vy: ((cy-impactY)*rand(.25,.7)-rand(45,125))*3.5, rotation: 0, vr: rand(-260,260), cx, cy, life: 2.8, bounces: 0, hits: new Set() });
     }
+    while (fragments.length > MAX_FRAGMENTS) fragments.shift().element.remove();
     target.classList.add("site-destroyed");
     score += 50; $(".game-hud strong b").textContent = String(score).padStart(3, "0");
     burst(impactX, impactY, "#19e276", 28);
@@ -219,10 +224,11 @@
     const target = document.elementFromPoint(x, y)?.closest(damageTargets);
     layer.style.visibility = previous;
     if (target && !target.closest(".bobby-system,.game-layer")) shatter(target, x, y);
+    let collateral = 0;
     [...document.querySelectorAll(damageTargets)].forEach((nearby) => {
       if (damaged.has(nearby) || nearby.closest(".bobby-system,.game-layer")) return;
       const rect = nearby.getBoundingClientRect();
-      if (Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y) < 135) shatter(nearby, x, y);
+      if (collateral < 1 && Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y) < 135) { shatter(nearby, x, y); collateral += 1; }
     });
     explode(x, y);
   }
@@ -235,6 +241,7 @@
   }
 
   function updateFragments(dt) {
+    if (!fragments.length) return;
     const targets = [...document.querySelectorAll(damageTargets)];
     fragments.forEach((body) => {
       body.vy += 1180 * dt; body.x += body.vx * dt; body.y += body.vy * dt; body.rotation += body.vr * dt; body.life -= dt;
@@ -267,7 +274,7 @@
     }
     bullets.forEach((rocket) => { rocket.x += rocket.vx*dt*60; rocket.y += rocket.vy*dt*60; rocket.life -= dt; if (Math.random()>.35) particles.push({ x:rocket.x-rocket.vx*2,y:rocket.y-rocket.vy*2,vx:rand(-.4,.4),vy:rand(-.4,.4),life:rand(.25,.55),color:"#87948d",r:rand(2,5) }); });
     bullets = bullets.filter((rocket) => rocket.life > 0);
-    particles.forEach((p) => { p.x += p.vx*dt*60; p.y += p.vy*dt*60; p.vy += (p.smoke ? -.012 : .08)*dt*60; if (p.smoke) p.r += dt*11; p.life -= dt*1.6; }); particles = particles.filter((p) => p.life > 0);
+    particles.forEach((p) => { p.x += p.vx*dt*60; p.y += p.vy*dt*60; p.vy += (p.smoke ? -.012 : .08)*dt*60; if (p.smoke) p.r += dt*8; p.life -= dt*1.9; }); particles = particles.filter((p) => p.life > 0).slice(-MAX_PARTICLES);
   }
 
   function draw() {
