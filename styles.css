@@ -196,3 +196,12 @@ body.discovery-complete .play-dock{animation:dock-complete 1.2s ease both}@keyfr
 
 /* Lower layers stay truly hidden; the last surviving region identifies itself. */
 .game-active:not(.hardware-stage) .hardware-world{opacity:0;visibility:hidden}.game-active .last-target{visibility:visible!important;opacity:1!important;outline:2px solid rgba(255,157,39,.8)!important;outline-offset:-2px;animation:last-target-signal 1.15s ease-in-out infinite!important}.site-integrity em{white-space:nowrap}@keyframes last-target-signal{50%{outline-color:#ff4e2f;filter:brightness(1.45) drop-shadow(0 0 20px rgba(255,90,45,.55))}}
+
+/* Bobby's expanded facial state machine. */
+.bobby.mood-angry .eye{top:25px;height:7px}.bobby.mood-angry .eye-a{transform:rotate(25deg)}.bobby.mood-angry .eye-b{transform:rotate(-25deg)}.bobby.mood-angry .bobby-face b{width:19px;border-top:3px solid #351006;border-radius:15%}
+.bobby.mood-tired .eye{top:28px;height:3px;border-radius:4px;box-shadow:0 -3px rgba(2,20,10,.35)}.bobby.mood-tired .bobby-face b{top:43px;width:14px;height:2px;border:0;background:#063019;transform:rotate(-5deg)}
+.bobby.mood-dizzy .eye{width:12px;height:12px;border:2px solid #052714;background:transparent;box-shadow:inset 3px 0 #052714,inset -3px 0 #052714}.bobby.mood-dizzy .eye-a{transform:rotate(35deg)}.bobby.mood-dizzy .eye-b{transform:rotate(-35deg)}.bobby.mood-dizzy .bobby-face b{width:12px;height:10px;border:2px solid #062b17;border-radius:50%}
+.bobby.mood-shocked .eye{top:20px;width:12px;height:16px;background:#020a05;box-shadow:0 0 0 3px #caffdf}.bobby.mood-shocked .bobby-face b{top:42px;width:13px;height:13px;border:2px solid #052313;border-radius:50%;background:#082d19}
+.bobby.mood-suspicious .eye-a{height:3px;top:28px}.bobby.mood-suspicious .eye-b{width:10px;height:12px;top:22px}.bobby.mood-suspicious .bobby-face b{width:16px;transform:rotate(8deg)}
+.bobby.mood-relieved .eye{top:27px;height:5px;background:transparent;border-top:2px solid #052313;border-radius:50%}.bobby.mood-relieved .bobby-face b{top:38px;height:9px;border-top:0;border-bottom:2px solid #052313;border-radius:50%}
+.bobby.mood-manic .eye-a{width:13px;height:15px;top:18px}.bobby.mood-manic .eye-b{width:6px;height:8px;top:27px}.bobby.mood-manic .bobby-face b{top:40px;width:21px;height:11px;border:2px dashed #082b18;border-radius:50%}
