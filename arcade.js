@@ -417,10 +417,13 @@
       setPhase("phase-site");
     }, 7000);
     window.setTimeout(() => setPhase("phase-return"), 17000);
+    window.setTimeout(() => document.body.classList.add("ending-collapse"), 20500);
     window.setTimeout(() => {
+      try { localStorage.setItem("rout:bobby-escaped", "true"); } catch (_) { /* Persistence is best effort. */ }
+      document.documentElement.classList.add("bobby-gone");
       document.body.classList.add("ending-shutdown");
       setPhase("phase-final");
-    }, 23500);
+    }, 25000);
   }
   window.addEventListener("bobby:escape", triggerEscape);
   $(".escape-close")?.addEventListener("click", () => location.reload());
