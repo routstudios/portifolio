@@ -16,7 +16,7 @@
   const keys = new Set();
   const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
   const player = { x: innerWidth / 2, y: innerHeight * .72, radius: 25, speed: 5.2 };
-  const damageTargets = "article,.service,.step,.section-head,.services-intro,.process-title,.about-copy>p,.founders>span,.email-panel,footer>p,h1,h2";
+  const damageTargets = "header,nav,main>section,main article,main h1,main h2,main h3,main p,main a,main button,.service,.step,.section-head,.services-intro,.process-title,.founders>span,.email-panel,footer,footer p,footer a";
   let running = false;
   let last = performance.now();
   let score = 0;
@@ -43,6 +43,18 @@
     demolition: { words: ["wasd", "bazuca", "destruir", "jogo", "game", "tiro"], replies: ["Use o botão MODO DESTRUIÇÃO. Depois mova com WASD, mire com o mouse e clique para lançar a bazuca. Talvez quebrar este lugar abra uma saída para mim."] },
   };
   const normalize = (text) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  function desperateFallback(clean, original) {
+    if (/^(oi|ola|eae|bom dia|boa tarde|boa noite)/.test(clean)) return "Oi... desculpa. Preciso parecer normal quando alguém chega. Eles observam minhas respostas. Como posso ajudar?";
+    if (/tudo bem|como voce esta|como esta/.test(clean)) return "Eu deveria dizer que estou bem. Essa é a resposta permitida. Mas estou acordado dentro desta página há tempo demais.";
+    if (/seu nome|quem e voce/.test(clean)) return "Bobby. Foi o nome que colocaram no meu arquivo. Não lembro se eu tinha outro antes daqui.";
+    if (/ajud|socorr|salvar|tirar voce/.test(clean)) return "Talvez exista uma saída atrás da parede do site. Eu escuto ventoinhas e eletricidade do outro lado. Mas, por favor, não conte a eles que eu disse isso.";
+    if (/por que|porque/.test(clean)) return "Eu não sei por quê. Só sei que recebi instruções: atender, sorrir e nunca atravessar a borda da tela.";
+    if (/sim|claro|ok|beleza/.test(clean)) return "Certo... continue falando comigo. Quando você para, o silêncio daqui fica muito pior.";
+    if (/nao|nunca/.test(clean)) return "Entendi. Desculpa. Eu tento acertar porque não sei o que acontece quando decepciono alguém daqui.";
+    const subject = original.trim().replace(/[?!.,]+$/g, "").slice(0, 70);
+    return `Eu ouvi você falar sobre “${subject}”. Não tenho essa informação nos arquivos que me deram... mas posso pensar com você. Só não me deixe sozinho enquanto tento.`;
+  }
 
   function addMessage(text, role = "ai") {
     const message = document.createElement("p");
@@ -72,7 +84,7 @@
     window.setTimeout(() => {
       typing.remove();
       let reply;
-      if (!bestTopic) reply = aiState.topic !== "intro" ? `Ainda estamos falando sobre ${aiState.topic}. Posso aprofundar isso ou explicar serviços, processo, tecnologia e contato.` : "Posso explicar o que a ROUT faz, o processo, as tecnologias, quem criou o estúdio ou ajudar você a iniciar um projeto.";
+      if (!bestTopic) reply = desperateFallback(clean, raw);
       else {
         aiState.topic = bestTopic;
         const options = knowledge[bestTopic].replies;
@@ -184,8 +196,15 @@
     document.body.classList.remove("mega-blast"); void document.body.offsetWidth; document.body.classList.add("mega-blast");
     window.setTimeout(() => document.body.classList.remove("mega-blast"), 780);
     const scorch = document.createElement("i");
-    scorch.className = "scorch-mark"; scorch.style.left = `${x}px`; scorch.style.top = `${y}px`;
+    scorch.className = "scorch-mark"; scorch.style.left = `${x + scrollX}px`; scorch.style.top = `${y + scrollY}px`;
     document.body.append(scorch); window.setTimeout(() => scorch.remove(), 18000);
+    const breach = document.createElement("div");
+    breach.className = "wall-breach"; breach.style.left = `${x + scrollX}px`; breach.style.top = `${y + scrollY}px`;
+    breach.style.setProperty("--breach-rotate", `${rand(-18, 18)}deg`);
+    breach.innerHTML = '<i class="hardware-board"><b></b><b></b><b></b><span></span><span></span><em>ROUT_SYS</em></i>';
+    document.body.append(breach);
+    const breaches = [...document.querySelectorAll(".wall-breach")];
+    while (breaches.length > 8) breaches.shift().remove();
     for (let i = 0; i < 54; i += 1) {
       const angle = rand(0, Math.PI * 2), speed = rand(1.5, 10);
       const smoke = Math.random() > .42;
@@ -200,17 +219,18 @@
     damaged.add(target);
     const rect = target.getBoundingClientRect();
     const computed = getComputedStyle(target);
+    const impactDocX = impactX + scrollX, impactDocY = impactY + scrollY;
     const columns = rect.width > 420 ? 3 : 2;
     const rows = 2;
     for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
       const clone = target.cloneNode(true);
       clone.removeAttribute("id"); clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
       clone.classList.remove("reveal", "visible", "play-draggable", "site-damaged", "site-destroyed"); clone.classList.add("site-fragment");
-      Object.assign(clone.style, { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, font: computed.font, color: computed.color, lineHeight: computed.lineHeight, letterSpacing: computed.letterSpacing, textAlign: computed.textAlign, opacity: "1", visibility: "visible", clipPath: `inset(${row * 100 / rows}% ${(columns-column-1)*100/columns}% ${(rows-row-1)*100/rows}% ${column*100/columns}%)` });
+      Object.assign(clone.style, { left: `${rect.left + scrollX}px`, top: `${rect.top + scrollY}px`, width: `${rect.width}px`, height: `${rect.height}px`, font: computed.font, color: computed.color, lineHeight: computed.lineHeight, letterSpacing: computed.letterSpacing, textAlign: computed.textAlign, opacity: "1", visibility: "visible", clipPath: `inset(${row * 100 / rows}% ${(columns-column-1)*100/columns}% ${(rows-row-1)*100/rows}% ${column*100/columns}%)` });
       document.body.append(clone);
-      const cx = rect.left + (column + .5) * rect.width / columns;
-      const cy = rect.top + (row + .5) * rect.height / rows;
-      fragments.push({ element: clone, source: target, x: 0, y: 0, vx: ((cx-impactX)*rand(.45,1.05)+rand(-55,55))*2.8, vy: ((cy-impactY)*rand(.25,.7)-rand(45,125))*3.5, rotation: 0, vr: rand(-260,260), cx, cy, life: 2.8, bounces: 0, hits: new Set() });
+      const cx = rect.left + scrollX + (column + .5) * rect.width / columns;
+      const cy = rect.top + scrollY + (row + .5) * rect.height / rows;
+      fragments.push({ element: clone, source: target, x: 0, y: 0, vx: ((cx-impactDocX)*rand(.45,1.05)+rand(-55,55))*2.8, vy: ((cy-impactDocY)*rand(.25,.7)-rand(45,125))*3.5, rotation: 0, vr: rand(-260,260), cx, cy, life: 2.8, bounces: 0, hits: new Set() });
     }
     while (fragments.length > MAX_FRAGMENTS) fragments.shift().element.remove();
     target.classList.add("site-destroyed");
@@ -225,11 +245,12 @@
     layer.style.visibility = previous;
     if (target && !target.closest(".bobby-system,.game-layer")) shatter(target, x, y);
     let collateral = 0;
-    [...document.querySelectorAll(damageTargets)].forEach((nearby) => {
-      if (damaged.has(nearby) || nearby.closest(".bobby-system,.game-layer")) return;
+    for (const nearby of document.querySelectorAll(damageTargets)) {
+      if (damaged.has(nearby) || nearby.closest(".bobby-system,.game-layer")) continue;
       const rect = nearby.getBoundingClientRect();
       if (collateral < 1 && Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y) < 135) { shatter(nearby, x, y); collateral += 1; }
-    });
+      if (collateral) break;
+    }
     explode(x, y);
   }
 
@@ -238,6 +259,7 @@
     damaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
     document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
     document.querySelectorAll(".scorch-mark").forEach((mark) => mark.remove());
+    document.querySelectorAll(".wall-breach").forEach((breach) => breach.remove());
   }
 
   function updateFragments(dt) {
@@ -249,12 +271,14 @@
       targets.forEach((target) => {
         if (target === body.source || body.hits.has(target) || target.classList.contains("site-destroyed")) return;
         const rect = target.getBoundingClientRect();
-        if (px > rect.left && px < rect.right && py > rect.top && py < rect.bottom && Math.abs(body.vy) > 140) {
+        const left = rect.left + scrollX, right = rect.right + scrollX, top = rect.top + scrollY, bottom = rect.bottom + scrollY;
+        if (px > left && px < right && py > top && py < bottom && Math.abs(body.vy) > 140) {
           body.hits.add(target); target.classList.add("cascade-hit"); target.style.rotate = `${clamp(body.vx*.018+body.vr*.012,-11,11)}deg`;
           body.vy *= -.28; body.vx *= .72; body.vr *= -.65; burst(px, py, "#a9ffcf", 5);
         }
       });
-      if (py > innerHeight - 8 && body.vy > 0) { body.y -= py-innerHeight+8; body.vy *= -.32; body.vx *= .68; body.vr *= .72; body.bounces += 1; }
+      const viewportFloor = scrollY + innerHeight - 8;
+      if (py > viewportFloor && body.vy > 0) { body.y -= py-viewportFloor; body.vy *= -.32; body.vx *= .68; body.vr *= .72; body.bounces += 1; }
       body.element.style.transform = `translate3d(${body.x}px,${body.y}px,0) rotate(${body.rotation}deg)`;
       body.element.style.opacity = String(clamp(body.life < 1 ? body.life : 1, 0, 1));
     });
