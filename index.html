@@ -18,6 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
+  <script src="arcade.js" defer></script>
 </head>
 <body>
   <canvas id="atmosphere" aria-hidden="true"></canvas>
@@ -26,6 +27,43 @@
   <div class="cursor" aria-hidden="true"><span></span></div>
   <div class="scroll-progress" aria-hidden="true"><i></i></div>
   <div class="achievement" role="status" aria-live="polite"><small>ROUTE FOUND</small><strong>Curiosity rewarded.</strong></div>
+  <div class="bobby-system" aria-live="polite">
+    <section class="bobby-panel glass" aria-label="Bobby, assistente da ROUT">
+      <header><span><i></i> BOBBY / ONLINE</span><button type="button" class="bobby-close" aria-label="Fechar Bobby">×</button></header>
+      <div class="bobby-dialog"><p>Oi. Sou o Bobby. Posso te guiar pelo site — ou abrir o arcade.</p></div>
+      <div class="bobby-suggestions">
+        <button type="button" data-ask="serviços">O que vocês fazem?</button>
+        <button type="button" data-ask="contato">Quero criar um projeto</button>
+        <button type="button" data-ask="arcade">Abrir ROUT Arcade</button>
+      </div>
+      <form class="bobby-form"><label class="sr-only" for="bobby-input">Fale com Bobby</label><input id="bobby-input" type="text" autocomplete="off" placeholder="Pergunte alguma coisa..."><button type="submit" aria-label="Enviar">↗</button></form>
+      <div class="arcade-menu">
+        <div class="arcade-title"><span>ROUT ARCADE</span><small>SELECT A PROTOCOL</small></div>
+        <div class="game-grid">
+          <button type="button" data-game="demolition"><b>01</b><span>Demolition</span><small>Break the interface</small></button>
+          <button type="button" data-game="hunt"><b>02</b><span>Node Hunt</span><small>Collect signals</small></button>
+          <button type="button" data-game="target"><b>03</b><span>Target Rush</span><small>Aim &amp; fire</small></button>
+          <button type="button" data-game="dodge"><b>04</b><span>Meteor Dodge</span><small>Stay online</small></button>
+          <button type="button" data-game="race"><b>05</b><span>Route Race</span><small>Find the path</small></button>
+          <button type="button" data-game="catch"><b>06</b><span>Gravity Catch</span><small>Catch the code</small></button>
+          <button type="button" data-game="glitch"><b>07</b><span>Glitch Clean</span><small>Repair reality</small></button>
+          <button type="button" data-game="memory"><b>08</b><span>Signal Memory</span><small>Repeat sequence</small></button>
+          <button type="button" data-game="laser"><b>09</b><span>Laser Grid</span><small>Evade the scan</small></button>
+          <button type="button" data-game="orbit"><b>10</b><span>Orbit Defense</span><small>Protect the core</small></button>
+        </div>
+      </div>
+    </section>
+    <button type="button" class="bobby" aria-label="Abrir Bobby" aria-expanded="false">
+      <span class="bobby-face"><i class="eye eye-a"></i><i class="eye eye-b"></i><b></b></span>
+      <span class="bobby-pulse"></span>
+    </button>
+  </div>
+  <div class="game-layer">
+    <canvas id="game-canvas"></canvas>
+    <div class="game-hud glass"><span class="game-name">ROUT ARCADE</span><strong>SCORE <b>000</b></strong><span class="game-time">60.0</span><button type="button" class="game-repair">REPAIR</button><button type="button" class="game-exit">EXIT ×</button></div>
+    <div class="game-instructions glass"><strong></strong><span></span></div>
+    <div class="game-crosshair" aria-hidden="true"><i></i><b></b></div>
+  </div>
   <aside class="play-dock glass" aria-label="Controles do modo interativo">
     <div class="dock-grip" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="dock-title"><span>INTERACTION FIELD</span><small>PHYSICS LIVE</small></div>
