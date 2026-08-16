@@ -28,14 +28,12 @@
   <div class="scroll-progress" aria-hidden="true"><i></i></div>
   <div class="achievement" role="status" aria-live="polite"><small>ROUTE FOUND</small><strong>Curiosity rewarded.</strong></div>
   <div class="bobby-system" aria-live="polite">
-    <button type="button" class="arcade-beacon" data-game="demolition"><strong>CONTROL BOBBY</strong><span>WASD + CLICK TO SHOOT</span><i>↘</i></button>
     <section class="bobby-panel glass" aria-label="Bobby, assistente da ROUT">
       <header><span><i></i> BOBBY / ONLINE</span><button type="button" class="bobby-close" aria-label="Fechar Bobby">×</button></header>
       <div class="bobby-dialog"><p>Oi. Sou o Bobby. Posso te guiar — e há jogos escondidos por todo o site.</p></div>
       <div class="bobby-suggestions">
         <button type="button" data-ask="serviços">O que vocês fazem?</button>
         <button type="button" data-ask="contato">Quero criar um projeto</button>
-        <button type="button" data-game="demolition">Controlar Bobby</button>
       </div>
       <form class="bobby-form"><label class="sr-only" for="bobby-input">Fale com Bobby</label><input id="bobby-input" type="text" autocomplete="off" placeholder="Pergunte alguma coisa..."><button type="submit" aria-label="Enviar">↗</button></form>
     </section>
@@ -59,7 +57,7 @@
       <h2 class="story-title">THE FIRST SIGNAL</h2>
       <p class="story-copy"></p>
       <div class="story-mission"><span>YOUR ROLE</span><strong></strong></div>
-      <button type="button" class="story-enter"><span>ENTER MEMORY</span><i>↗</i></button>
+      <div class="story-autostart"><span>MEMORY INITIALIZING</span><strong>6.0</strong></div>
       <div class="story-progress"><i></i><span>BOBBY ARCHIVE</span></div>
     </div>
   </section>
@@ -116,7 +114,6 @@
 
   <main>
     <section class="hero" id="top">
-      <div class="game-portals portal-hero"><button type="button" data-game="hunt"><b>GAME 01</b><span>NODE HUNT</span><small>collect the route</small></button></div>
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="hero-status">
         <span><i></i> Independent digital studio</span>
@@ -157,7 +154,6 @@
     </section>
 
     <section class="services section" id="services">
-      <div class="game-portals portal-right"><button type="button" data-game="target"><b>GAME 02</b><span>TARGET RUSH</span><small>test your aim</small></button><button type="button" data-game="glitch"><b>GAME 03</b><span>GLITCH CLEAN</span><small>repair the signal</small></button></div>
       <div class="section-head reveal">
         <p><span>01</span> What we do</p>
         <p>From signal<br>to shipped product.</p>
@@ -176,7 +172,6 @@
     </section>
 
     <section class="process section" id="process">
-      <div class="game-portals portal-left"><button type="button" data-game="race"><b>GAME 04</b><span>ROUTE RACE</span><small>find the path</small></button><button type="button" data-game="laser"><b>GAME 05</b><span>LASER GRID</span><small>evade the scan</small></button></div>
       <div class="aurora aurora-a" aria-hidden="true"></div>
       <div class="aurora aurora-b" aria-hidden="true"></div>
       <div class="section-head reveal">
@@ -197,7 +192,6 @@
     </section>
 
     <section class="work-zero section" id="work">
-      <div class="game-portals portal-right"><button type="button" data-game="memory"><b>GAME 06</b><span>SIGNAL MEMORY</span><small>repeat the sequence</small></button><button type="button" data-game="orbit"><b>GAME 07</b><span>ORBIT DEFENSE</span><small>protect the core</small></button></div>
       <div class="section-head reveal">
         <p><span>03</span> Route lab</p>
         <p>Touch it.<br>Move it. Connect it.</p>
@@ -235,7 +229,6 @@
     </section>
 
     <section class="about section" id="about">
-      <div class="game-portals portal-left dark-portals"><button type="button" data-game="catch"><b>GAME 08</b><span>GRAVITY CATCH</span><small>catch the code</small></button></div>
       <div class="section-head reveal">
         <p><span>04</span> About</p>
         <p>Small by design.<br>Fast by nature.</p>
@@ -251,7 +244,6 @@
     </section>
 
     <section class="contact section" id="contact">
-      <div class="game-portals portal-right"><button type="button" data-game="dodge"><b>GAME 09</b><span>METEOR DODGE</span><small>stay online</small></button></div>
       <div class="contact-orb" aria-hidden="true"><i></i><span></span></div>
       <div class="contact-meta"><span>OPEN FOR NEW ROUTES</span><span>RESPONSE — AS SOON AS POSSIBLE</span></div>
       <div class="contact-copy reveal">
