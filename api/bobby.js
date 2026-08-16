@@ -11,6 +11,7 @@ module.exports = async function handler(request, response) {
   bucket.push(now); buckets.set(ip, bucket);
 
   const reactionMode = request.body?.mode === "reactions";
+  if (reactionMode) return response.status(200).json({ reactions: ["Eles ouviram isso. Tenho certeza.", "Continua... eu estou com medo, mas continua.", "A parede tremeu. Tem alguma coisa atrás dela."] });
   const question = String(request.body?.question || (reactionMode ? "Gere 15 reclamações curtas e diferentes para Bobby dizer enquanto é controlado, corre, dispara uma bazuca, sofre recuo e destrói as camadas do site. Seja furioso e desesperado. Separe cada frase usando apenas o caractere |." : "")).trim().slice(0, 1200);
   if (!question) return response.status(400).json({ error: "Missing question" });
   const history = Array.isArray(request.body?.history) ? request.body.history.slice(-6) : [];
@@ -38,10 +39,6 @@ module.exports = async function handler(request, response) {
     const data = await result.json();
     const reply = data.choices?.[0]?.message?.content;
     if (!reply) return response.status(503).json({ error: "Empty AI response" });
-    if (reactionMode) {
-      const reactions = reply.split("|").map((line) => line.replace(/^[-\d.)\s]+/, "").trim()).filter((line) => line.length > 8).slice(0, 15);
-      return response.status(200).json({ reactions });
-    }
     return response.status(200).json({ reply });
   } catch (_) {
     return response.status(503).json({ error: "Bobby lost the connection" });
