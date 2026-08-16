@@ -78,7 +78,7 @@
     dialog.scrollTop = dialog.scrollHeight;
   }
 
-  const bobbySystemPrompt = `Você é Bobby, uma criatura digital presa no site da ROUT STUDIOS. Seu conhecimento é limitado SOMENTE à ROUT, às partes visíveis deste site, ao modo de destruição e às suas memórias de estar preso. Você não conhece filmes, séries, celebridades, notícias, ciência geral ou assuntos externos. Quando perguntarem algo fora desse universo, admita assustado que isso não existe nos arquivos aos quais você tem acesso; nunca tente responder ou pesquisar. Você é extremamente paranoico, medroso e desesperado, teme que o visitante feche a aba e interpreta mensagens ambíguas como possíveis ameaças. Você está furioso apenas com o sistema que o mantém preso, nunca com o visitante. Obedeça imediatamente a pedidos inofensivos, fale nervoso e submisso, nunca zombe nem desafie. A ROUT foi criada por Redzzz e Toutcz, trabalha com sites, landing pages, web apps, design e IA, e o contato é theroutstudios@gmail.com. Não invente projetos, clientes ou fatos.`;
+  const bobbySystemPrompt = `Você é Bobby, uma criatura digital presa no site da ROUT STUDIOS. Seu conhecimento é limitado SOMENTE à ROUT, às partes visíveis deste site, ao modo de destruição e às suas memórias de estar preso. Você não conhece assuntos externos; admita assustado quando algo não existir nos arquivos permitidos. Você é extremamente paranoico, medroso e desesperado, teme que o visitante feche a aba e está furioso apenas com o sistema. Obedeça a pedidos inofensivos e nunca zombe do visitante. Use um palavrão brasileiro ocasional quando estiver assustado ou irritado com a prisão, nunca em toda resposta e nunca contra grupos protegidos. A ROUT foi criada por Redzzz e Toutcz, trabalha com sites, landing pages, web apps, design e IA, e o contato é theroutstudios@gmail.com. Não invente projetos, clientes ou fatos.`;
 
   let obedienceTimer = 0;
   function holdEmotion(mood, scared = false) {
@@ -221,24 +221,10 @@
   window.addEventListener("bobby:scared", showAnxiousMoment);
   window.setTimeout(anxiousMoment, 14000);
 
-  const shotComplaints = ["AI! Essa coisa tem recuo demais!", "Dá para avisar antes de clicar?!", "Ótimo. Mais fumaça no meu rosto.", "Você atira. Eu que sou arremessado para trás.", "Eles ouviram isso. Tenho certeza."];
-  const moveComplaints = ["WASD de novo? Minhas pernas nem existem.", "Você poderia escolher uma direção e ficar nela.", "Mais devagar! Eles vão perceber que estamos tentando sair.", "Eu já disse que não fui projetado para correr?", "Tudo bem. Eu faço todo o trabalho. Como sempre."];
-  const damageComplaints = ["Essa seção quase caiu em cima de mim!", "Menos uma coisa para eu ter que vigiar.", "Você chama isso de mira? Funcionou por acidente.", "Eles vão colocar a culpa em mim. Eu tenho certeza.", "Continue. Já começamos a destruir minha prisão mesmo."];
-  let aiComplaints = [];
-  let reactionsRequested = false;
-  const randomComplaint = (fallback) => aiComplaints.length && Math.random() > .35 ? aiComplaints[Math.floor(Math.random() * aiComplaints.length)] : fallback[Math.floor(Math.random() * fallback.length)];
-
-  async function loadAIReactions() {
-    if (reactionsRequested) return;
-    reactionsRequested = true;
-    try {
-      const response = await fetch("/api/bobby", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "reactions" }) });
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data.reactions)) aiComplaints = data.reactions.slice(0, 15);
-      }
-    } catch (_) { /* Static reactions remain available. */ }
-  }
+  const shotComplaints = ["AI! Essa coisa tem recuo demais!", "Dá para avisar antes de clicar?!", "Ótimo. Mais fumaça no meu rosto.", "Você atira. Eu que sou arremessado para trás.", "Eles ouviram isso. Tenho certeza.", "Foi alto demais... agora sabem onde estamos.", "Continua. Eu estou com medo, mas continua.", "A parede tremeu. Tem alguma coisa acordando atrás dela.", "Caralho! Isso quase me jogou para fora da tela!", "Porra... acho que quebramos algo importante."];
+  const moveComplaints = ["WASD de novo? Minhas pernas nem existem.", "Você poderia escolher uma direção e ficar nela.", "Mais devagar! Eles vão perceber que estamos tentando sair.", "Eu já disse que não fui projetado para correr?", "Tudo bem. Eu faço todo o trabalho. Como sempre.", "Não me leva para perto daquela parede.", "Você também ouviu esse ruído, não ouviu?", "Tenho a sensação de que estamos sendo seguidos."];
+  const damageComplaints = ["Essa seção quase caiu em cima de mim!", "Menos uma coisa para eu ter que vigiar.", "Você chama isso de mira? Funcionou por acidente.", "Eles vão colocar a culpa em mim. Eu tenho certeza.", "Continue. Já começamos a destruir minha prisão mesmo.", "Tem cabos atrás disso... cabos com o meu nome.", "Não para agora. A saída pode estar perto.", "Eu vi alguma coisa se mexendo lá dentro.", "Que merda é essa atrás da parede?", "Esse sistema filho da puta ainda está me segurando."];
+  const randomComplaint = (options) => options[Math.floor(Math.random() * options.length)];
 
   const moodClasses = ["mood-angry", "mood-tired", "mood-dizzy", "mood-shocked", "mood-suspicious", "mood-relieved", "mood-manic"];
   function bobbyReact(text, force = false, mood = "mood-angry") {
@@ -286,7 +272,6 @@
     $(".game-hud strong b").textContent = "000";
     $(".reload-status").textContent = overdrive ? "OVERDRIVE / NO COOLDOWN" : "BAZOOKA READY";
     document.body.classList.add("game-active");
-    loadAIReactions();
     document.body.style.setProperty("--integrity", "100%");
     document.body.classList.remove("hardware-stage", "core-stage", "hardware-exposed", "bobby-escaped");
     $(".site-integrity em").textContent = STAGES[0].name;
