@@ -3,7 +3,6 @@
   const bobby = document.querySelector(".bobby");
   const panel = document.querySelector(".bobby-panel");
   const dialog = document.querySelector(".bobby-dialog p");
-  const arcade = document.querySelector(".arcade-menu");
   const form = document.querySelector(".bobby-form");
   const input = document.querySelector("#bobby-input");
   const layer = document.querySelector(".game-layer");
@@ -65,7 +64,7 @@
     const q = raw.toLowerCase().trim();
     if (!q) return;
     if (/arcade|jogo|game|jogar|diversão/.test(q)) {
-      speak("ROUT Arcade aberto. Escolha um protocolo — cada jogo reage de um jeito diferente ao site.", () => arcade.classList.add("open"));
+      speak("Os jogos estão espalhados pelas seções. Continue descendo e procure os pequenos portais GAME; cada área guarda uma mecânica diferente.");
     } else if (/serviço|fazem|site|landing|app|design|ia/.test(q)) {
       speak("Criamos web design, sites, landing pages, aplicações web e soluções com IA. Posso te levar até essa parte.", () => document.querySelector("#services")?.scrollIntoView({ behavior: "smooth" }));
     } else if (/contato|projeto|email|orçamento|preço|contratar/.test(q)) {
@@ -75,7 +74,7 @@
     } else if (/bobby|você|seu nome/.test(q)) {
       speak("Eu sou Bobby, a entidade interativa da ROUT. Guia, copiloto e, quando necessário, agente do caos.");
     } else if (/olá|oi|hello|eai|salve/.test(q)) {
-      speak("Oi! Quer conhecer a ROUT, iniciar um projeto ou causar um pouco de caos no arcade?");
+      speak("Oi! Quer conhecer a ROUT, iniciar um projeto ou encontrar algum dos jogos escondidos pelo site?");
     } else {
       speak("Ainda estou aprendendo essa rota. Posso explicar os serviços, apresentar a ROUT, abrir o contato ou iniciar um dos 10 jogos.");
     }
@@ -132,7 +131,7 @@
     document.body.classList.add("game-active");
     layer.classList.add("active");
     layer.classList.toggle("aiming", ["demolition", "target", "glitch", "orbit", "memory"].includes(mode));
-    system.classList.remove("open"); arcade.classList.remove("open");
+    system.classList.remove("open");
     document.querySelector(".game-name").textContent = gameNames[mode];
     const help = gameHelp[mode];
     document.querySelector(".game-instructions strong").textContent = help[0];
