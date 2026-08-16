@@ -108,6 +108,23 @@ function drawCutscene(time) {
 
 const menuButton = document.querySelector(".menu");
 const mobileNav = document.querySelector(".mobile-nav");
+const siteHeader = document.querySelector(".site-header");
+const navSections = [...document.querySelectorAll("main > section[id]")];
+const navLinks = [...document.querySelectorAll('.site-header nav a[href^="#"]')];
+function updateNavigationState() {
+  siteHeader?.classList.toggle("scrolled", scrollY > 28);
+  const marker = scrollY + innerHeight * .34;
+  let active = navSections[0]?.id;
+  navSections.forEach((section) => { if (section.offsetTop <= marker) active = section.id; });
+  navLinks.forEach((link) => {
+    const current = link.getAttribute("href") === `#${active}`;
+    link.classList.toggle("active", current);
+    if (current) link.setAttribute("aria-current", "location");
+    else link.removeAttribute("aria-current");
+  });
+}
+window.addEventListener("scroll", updateNavigationState, { passive: true });
+updateNavigationState();
 menuButton?.addEventListener("click", () => {
   const open = mobileNav?.classList.toggle("open") ?? false;
   menuButton.setAttribute("aria-expanded", String(open));
