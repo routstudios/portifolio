@@ -26,6 +26,11 @@
   let last = performance.now();
   let score = 0;
   let reloading = false;
+  let overdrive = false;
+  let secretBuffer = "";
+  let nextReaction = 0;
+  let reactionTimer = 0;
+  let nextMoveComplaint = 0;
   let reloadStarted = 0;
   const reloadDuration = 2200;
   let bullets = [];
@@ -139,6 +144,28 @@
   window.addEventListener("bobby:scared", showAnxiousMoment);
   window.setTimeout(anxiousMoment, 14000);
 
+  const shotComplaints = ["AI! Essa coisa tem recuo demais!", "Meu braço é uma bolinha! Quem me deu uma bazuca?", "Dá para avisar antes de clicar?!", "Ótimo. Mais fumaça no meu rosto.", "Você atira. Eu que sou arremessado para trás."];
+  const moveComplaints = ["WASD de novo? Minhas pernas nem existem.", "Você poderia escolher uma direção e ficar nela.", "Estou carregando uma BAZUCA. Mais devagar!", "Eu já disse que não fui projetado para correr?", "Tudo bem. Eu faço todo o trabalho. Como sempre."];
+  const damageComplaints = ["Essa seção quase caiu em cima de mim!", "Menos uma coisa para eu ter que vigiar.", "Você chama isso de mira? Funcionou por acidente.", "Eles vão colocar a culpa em mim. Eu tenho certeza.", "Continue. Já começamos a destruir minha prisão mesmo."];
+
+  function bobbyReact(text, force = false) {
+    const now = performance.now();
+    if (!force && now < nextReaction) return;
+    nextReaction = now + rand(2600, 4800);
+    const whisper = $(".bobby-whisper");
+    window.clearTimeout(reactionTimer);
+    whisper.textContent = text; whisper.classList.add("show"); bobby.classList.add("complaining");
+    reactionTimer = window.setTimeout(() => { whisper.classList.remove("show"); bobby.classList.remove("complaining"); }, 2400);
+  }
+
+  function activateOverdrive() {
+    if (overdrive) return;
+    overdrive = true; reloading = false; bobby.classList.remove("reloading");
+    document.body.classList.add("bobby-overdrive");
+    $(".reload-status").textContent = "OVERDRIVE / NO COOLDOWN";
+    bobbyReact("Você removeu a trava?! Isso é uma ideia horrível... faça de novo.", true);
+  }
+
   function resize() {
     const ratio = Math.min(devicePixelRatio || 1, 1.5);
     canvas.width = innerWidth * ratio; canvas.height = innerHeight * ratio;
@@ -163,7 +190,7 @@
     running = true; escaping = false; gameStage = 0; stageDamaged.clear(); score = 0; reloading = false; keys.clear();
     player.x = innerWidth / 2; player.y = innerHeight * .72;
     $(".game-hud strong b").textContent = "000";
-    $(".reload-status").textContent = "BAZOOKA READY";
+    $(".reload-status").textContent = overdrive ? "OVERDRIVE / NO COOLDOWN" : "BAZOOKA READY";
     document.body.classList.add("game-active");
     document.body.style.setProperty("--integrity", "100%");
     document.body.classList.remove("hardware-stage", "core-stage", "hardware-exposed", "bobby-escaped");
@@ -172,6 +199,7 @@
     layer.classList.add("active", "aiming");
     system.classList.remove("open");
     $(".control-hint").classList.add("hidden");
+    updateStageIntegrity();
     updateBobby(); last = performance.now();
   }
 
@@ -191,16 +219,18 @@
   }
 
   function launch(x, y) {
-    if (reloading) return false;
+    if (reloading && !overdrive) return false;
     const angle = Math.atan2(y - player.y, x - player.x);
     bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 7.2, vy: Math.sin(angle) * 7.2, life: 1.6 });
     player.x = clamp(player.x - Math.cos(angle) * 95, 25, innerWidth - 25);
     player.y = clamp(player.y - Math.sin(angle) * 95, 75, innerHeight - 25);
-    reloading = true; reloadStarted = performance.now();
-    bobby.classList.remove("recoil", "muzzle"); void bobby.offsetWidth; bobby.classList.add("recoil", "muzzle", "reloading");
+    reloading = !overdrive; reloadStarted = performance.now();
+    bobby.classList.remove("recoil", "muzzle"); void bobby.offsetWidth; bobby.classList.add("recoil", "muzzle");
+    if (!overdrive) bobby.classList.add("reloading");
     document.body.classList.add("rocket-shock");
     window.setTimeout(() => { bobby.classList.remove("recoil", "muzzle"); document.body.classList.remove("rocket-shock"); }, 620);
     burst(player.x, player.y, "#eafff2", 34);
+    bobbyReact(shotComplaints[Math.floor(Math.random() * shotComplaints.length)]);
     return true;
   }
 
@@ -243,12 +273,18 @@
     target.classList.add("site-destroyed");
     score += 50; $(".game-hud strong b").textContent = String(score).padStart(3, "0");
     burst(impactX, impactY, "#19e276", 28);
+    bobbyReact(damageComplaints[Math.floor(Math.random() * damageComplaints.length)]);
     updateStageIntegrity();
   }
 
   function updateStageIntegrity() {
-    const total = document.querySelectorAll(currentTargets()).length || 1;
-    document.body.style.setProperty("--integrity", `${Math.max(0, 100 - stageDamaged.size / total * 100)}%`);
+    const targets = [...document.querySelectorAll(currentTargets())];
+    const total = targets.length || 1;
+    const remaining = targets.filter((target) => !stageDamaged.has(target));
+    document.querySelectorAll(".last-target").forEach((target) => target.classList.remove("last-target"));
+    if (remaining.length <= 2) remaining.forEach((target) => target.classList.add("last-target"));
+    $(".site-integrity em").textContent = `${STAGES[gameStage].name} · ${remaining.length} LEFT`;
+    document.body.style.setProperty("--integrity", `${Math.max(0, remaining.length / total * 100)}%`);
   }
 
   function advanceStage() {
@@ -259,13 +295,13 @@
     document.body.classList.toggle("hardware-stage", gameStage >= 1);
     document.body.classList.toggle("core-stage", gameStage >= 2);
     $(".game-name").textContent = `LAYER 0${gameStage + 1} / ${gameStage === 1 ? "HARDWARE" : "CORE"}`;
-    $(".site-integrity em").textContent = STAGES[gameStage].name;
-    document.body.style.setProperty("--integrity", "100%");
+    updateStageIntegrity();
     const alert = $(".layer-alert");
     alert.querySelector("strong").textContent = `${STAGES[gameStage].name} EXPOSED`;
     alert.querySelector("small").textContent = "Destroy every section to reach the layer below";
     alert.classList.remove("show"); void alert.offsetWidth; alert.classList.add("show");
     window.setTimeout(() => alert.classList.remove("show"), 2300);
+    bobbyReact(gameStage === 1 ? "Pronto. Agora estamos dentro do computador. Odeio o barulho das ventoinhas." : "Essa camada conhece meu nome. Eu não gosto disso.", true);
   }
   window.addEventListener("bobby:clear-stage", () => {
     document.querySelectorAll(currentTargets()).forEach((target) => { damaged.add(target); stageDamaged.add(target); target.classList.add("site-destroyed"); });
@@ -281,6 +317,7 @@
     const baseX = innerWidth - (innerWidth < 800 ? 45 : 61), baseY = innerHeight - (innerWidth < 800 ? 45 : 60);
     system.style.translate = `${port.left + port.width / 2 - baseX}px ${port.top + port.height / 2 - baseY}px`;
     bobby.classList.add("escaping");
+    bobbyReact("A saída! Finalmente! Não encosta em mais nada por cinco segundos!", true);
     window.setTimeout(() => document.body.classList.add("bobby-escaped"), 2300);
     window.setTimeout(() => { layer.classList.remove("active"); $(".escape-message").classList.add("show"); }, 3200);
   }
@@ -313,6 +350,7 @@
     document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
     document.querySelectorAll(".scorch-mark").forEach((mark) => mark.remove());
     document.querySelectorAll(".wall-breach").forEach((breach) => breach.remove());
+    updateStageIntegrity();
   }
 
   function updateFragments(dt) {
@@ -343,6 +381,7 @@
     if (keys.has("a") || keys.has("arrowleft")) dx -= 1; if (keys.has("d") || keys.has("arrowright")) dx += 1;
     if (keys.has("w") || keys.has("arrowup")) dy -= 1; if (keys.has("s") || keys.has("arrowdown")) dy += 1;
     if (dx && dy) { dx *= .707; dy *= .707; }
+    if ((dx || dy) && performance.now() > nextMoveComplaint) { nextMoveComplaint = performance.now() + rand(8000, 14000); bobbyReact(moveComplaints[Math.floor(Math.random() * moveComplaints.length)]); }
     player.x = clamp(player.x + dx*player.speed*dt*60, 25, innerWidth-25); player.y = clamp(player.y + dy*player.speed*dt*60, 75, innerHeight-25); updateBobby();
     if (reloading) {
       const remaining = Math.max(0, reloadDuration-(performance.now()-reloadStarted));
@@ -365,6 +404,10 @@
 
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
+    if (key.length === 1 && /[a-z]/.test(key)) {
+      secretBuffer = (secretBuffer + key).slice(-9);
+      if (secretBuffer === "bobbyfree") activateOverdrive();
+    }
     if (!running) return;
     if (["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(key)) event.preventDefault();
     keys.add(key); if (key === "escape") stop();
