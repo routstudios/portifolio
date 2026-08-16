@@ -126,6 +126,7 @@ copyButton?.addEventListener("click", async () => {
   if (!email) return;
   try {
     await navigator.clipboard.writeText(email);
+    discover("email", "SIGNAL COPIED", "Direct route to our inbox unlocked.");
     copyButton.querySelector("span").textContent = "Email copied";
     window.setTimeout(() => { copyButton.querySelector("span").textContent = "Copy email"; }, 1800);
   } catch {
@@ -186,6 +187,7 @@ document.addEventListener("pointerdown", (event) => {
 const heroCopy = document.querySelector(".hero-copy");
 const routeSystem = document.querySelector(".route-system");
 const serviceCards = [...document.querySelectorAll(".service")];
+const exploredServices = new Set();
 serviceCards.forEach((card) => {
   const rx = makeSpring(0, 0.1, 0.74);
   const ry = makeSpring(0, 0.1, 0.74);
@@ -197,6 +199,10 @@ serviceCards.forEach((card) => {
     ry.target = ((event.clientX - rect.left) / rect.width - 0.5) * 2.4;
   });
   card.addEventListener("pointerleave", () => { rx.target = 0; ry.target = 0; });
+  card.addEventListener("click", () => {
+    exploredServices.add(card.querySelector("h3")?.textContent);
+    if (exploredServices.size === serviceCards.length) discover("services", "FULL STACK", "Every capability has been inspected.");
+  });
 });
 
 const workArea = document.querySelector(".empty-work");
@@ -239,12 +245,143 @@ function showAchievement(label, text) {
   achievementTimer = window.setTimeout(() => achievement.classList.remove("show"), 3200);
 }
 
+const discoveries = new Set();
+const discoveryScore = document.querySelector(".dock-score b");
+function discover(id, label, text) {
+  if (discoveries.has(id)) return;
+  discoveries.add(id);
+  if (discoveryScore) discoveryScore.textContent = String(discoveries.size);
+  showAchievement(`${label} · ${discoveries.size}/12`, text);
+  if (discoveries.size === 12) {
+    document.body.classList.add("discovery-complete");
+    window.setTimeout(() => document.body.classList.remove("discovery-complete"), 2200);
+  }
+}
+
+const playDock = document.querySelector(".play-dock");
+const dockReset = document.querySelector(".dock-reset");
+let globalPlayEnabled = true;
+let globalDragCount = 0;
+const globalSelector = [
+  ".hero-copy", ".route-system", ".hero-bottom > p", ".hero-actions",
+  ".section-head", ".services-intro", ".service", ".process-title", ".step",
+  ".lab-intro", ".work-after p", ".about h2", ".about-copy > p",
+  ".founders > span", ".contact-copy", ".email-panel", ".contact-orb", "footer > p"
+].join(",");
+const globalStates = [...document.querySelectorAll(globalSelector)].map((element) => ({
+  element, x: 0, y: 0, vx: 0, vy: 0, active: false, pointerId: null,
+  lastX: 0, lastY: 0, moved: false,
+}));
+
+globalStates.forEach((state) => {
+  const { element } = state;
+  element.classList.add("play-draggable");
+  element.addEventListener("pointerdown", (event) => {
+    if (event.target.closest("a,button,input,label")) return;
+    event.preventDefault();
+    state.active = true;
+    state.pointerId = event.pointerId;
+    state.lastX = event.clientX;
+    state.lastY = event.clientY;
+    state.vx = 0;
+    state.vy = 0;
+    state.moved = false;
+    element.classList.add("dragging-global");
+    element.setPointerCapture(event.pointerId);
+  });
+  element.addEventListener("pointermove", (event) => {
+    if (!state.active || event.pointerId !== state.pointerId) return;
+    const dx = event.clientX - state.lastX;
+    const dy = event.clientY - state.lastY;
+    state.x += dx;
+    state.y += dy;
+    state.vx = dx * .82;
+    state.vy = dy * .82;
+    state.moved ||= Math.abs(dx) + Math.abs(dy) > 2;
+    state.lastX = event.clientX;
+    state.lastY = event.clientY;
+  });
+  const release = (event) => {
+    if (!state.active || event.pointerId !== state.pointerId) return;
+    state.active = false;
+    element.classList.remove("dragging-global");
+    if (state.moved) {
+      globalDragCount += 1;
+      if (globalDragCount === 1) discover("interaction", "FIELD DISTURBED", "Every object here has physical memory.");
+      if (globalDragCount >= 5) discover("drag-five", "ZERO GRAVITY", "Five interface objects displaced.");
+      if (Math.hypot(state.vx, state.vy) > 9) discover("throw", "ESCAPE VELOCITY", "You threw the interface off its route.");
+    }
+  };
+  element.addEventListener("pointerup", release);
+  element.addEventListener("pointercancel", release);
+});
+
+function resetGlobalObjects() {
+  globalStates.forEach((state) => {
+    state.active = false;
+    state.element.classList.remove("dragging-global");
+    state.vx += -state.x * .13;
+    state.vy += -state.y * .13;
+  });
+}
+dockReset?.addEventListener("click", resetGlobalObjects);
+
+const dockDrag = { active: false, pointerId: null, x: 0, y: 0, lastX: 0, lastY: 0 };
+playDock?.querySelector(".dock-grip")?.addEventListener("pointerdown", (event) => {
+  dockDrag.active = true; dockDrag.pointerId = event.pointerId;
+  dockDrag.lastX = event.clientX; dockDrag.lastY = event.clientY;
+  playDock.classList.add("dock-dragging");
+  playDock.setPointerCapture(event.pointerId);
+});
+playDock?.addEventListener("pointermove", (event) => {
+  if (!dockDrag.active || event.pointerId !== dockDrag.pointerId) return;
+  dockDrag.x = clamp(dockDrag.x + event.clientX - dockDrag.lastX, -10, innerWidth - playDock.offsetWidth - 12);
+  dockDrag.y = clamp(dockDrag.y + event.clientY - dockDrag.lastY, -(innerHeight - playDock.offsetHeight - 12), 10);
+  dockDrag.lastX = event.clientX; dockDrag.lastY = event.clientY;
+  playDock.style.translate = `${dockDrag.x}px ${dockDrag.y}px`;
+});
+const releaseDock = (event) => {
+  if (!dockDrag.active || event.pointerId !== dockDrag.pointerId) return;
+  dockDrag.active = false; playDock.classList.remove("dock-dragging");
+};
+playDock?.addEventListener("pointerup", releaseDock);
+playDock?.addEventListener("pointercancel", releaseDock);
+
+function updateGlobalPhysics() {
+  globalStates.forEach((state) => {
+    if (!state.active) {
+      if (!globalPlayEnabled || Math.abs(state.x) > 190 || Math.abs(state.y) > 190) {
+        state.vx += -state.x * (globalPlayEnabled ? .025 : .075);
+        state.vy += -state.y * (globalPlayEnabled ? .025 : .075);
+      }
+      state.x += state.vx;
+      state.y += state.vy;
+      state.vx *= globalPlayEnabled ? .91 : .78;
+      state.vy *= globalPlayEnabled ? .91 : .78;
+    }
+    if (Math.abs(state.x) < .03 && Math.abs(state.vx) < .03) state.x = state.vx = 0;
+    if (Math.abs(state.y) < .03 && Math.abs(state.vy) < .03) state.y = state.vy = 0;
+    state.element.style.translate = `${state.x}px ${state.y}px`;
+  });
+}
+
+document.querySelector(".contact-orb")?.addEventListener("pointerdown", () => {
+  discover("orb", "ORBIT CAPTURED", "You caught the contact signal.");
+});
+
+let keyboardRoute = "";
+window.addEventListener("keydown", (event) => {
+  if (event.key.length !== 1) return;
+  keyboardRoute = `${keyboardRoute}${event.key.toUpperCase()}`.slice(-4);
+  if (keyboardRoute === "ROUT") discover("keyboard", "ACCESS CODE", "ROUT protocol entered manually.");
+});
+
 let logoClicks = 0;
 document.querySelector(".site-header .logo")?.addEventListener("click", (event) => {
   logoClicks += 1;
   if (logoClicks === 5) {
     event.preventDefault();
-    showAchievement("SECRET ROUTE", "You found the studio frequency.");
+    discover("logo", "SECRET ROUTE", "You found the studio frequency.");
     document.body.classList.add("frequency");
     window.setTimeout(() => document.body.classList.remove("frequency"), 2500);
     logoClicks = 0;
@@ -259,7 +396,7 @@ routeNodes.forEach((node) => node.addEventListener("click", () => {
   visitedNodes.add(node.dataset.node);
   node.classList.add("visited");
   document.querySelector(".route-hint span").textContent = `${visitedNodes.size}/4`;
-  if (visitedNodes.size === 4) showAchievement("ROUTE COMPLETE", "Idea connected to launch.");
+  if (visitedNodes.size === 4) discover("hero-route", "ROUTE COMPLETE", "Idea connected to launch.");
 }));
 
 const lab = document.querySelector(".route-lab");
@@ -332,6 +469,7 @@ gravityToggle?.addEventListener("change", () => {
   gravityEnabled = gravityToggle.checked;
   lab?.classList.toggle("gravity-on", gravityEnabled);
   document.querySelector(".lab-status span").textContent = gravityEnabled ? "GRAVITY ENABLED — THROW A MODULE" : "DRAG MODULES TO REROUTE";
+  if (gravityEnabled) discover("gravity", "GRAVITY ONLINE", "Physics entered the ROUT LAB.");
 });
 
 labReset?.addEventListener("click", () => {
@@ -408,7 +546,7 @@ function drawLab() {
     labComplete = true;
     lab.classList.add("complete");
     document.querySelector(".lab-status span").textContent = "ROUTE COMPLETE — PRODUCT ONLINE";
-    showAchievement("SYSTEM CONNECTED", "You built a better route.");
+    discover("lab-complete", "SYSTEM CONNECTED", "You built a better route.");
   } else if (!connected && labComplete) {
     labComplete = false;
     lab.classList.remove("complete");
@@ -525,6 +663,7 @@ function frame(time) {
   }
   const maxScroll = Math.max(document.documentElement.scrollHeight - innerHeight, 1);
   scrollSpring.target = scrollY / maxScroll;
+  if (scrollSpring.target > .97) discover("journey", "END OF THE ROUTE", "You explored the complete interface.");
   document.querySelector(".scroll-progress i").style.transform = `scaleY(${updateSpring(scrollSpring)})`;
 
   if (!reducedMotion && heroCopy && routeSystem) {
@@ -552,6 +691,7 @@ function frame(time) {
     drawRoute(time);
   }
   updateLabPhysics();
+  updateGlobalPhysics();
   drawLab();
   pointer.speed *= 0.9;
   window.requestAnimationFrame(frame);
