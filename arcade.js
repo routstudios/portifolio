@@ -402,8 +402,25 @@
     bobby.classList.add("escaping");
     bobbyReact("A saída! CARALHO, FINALMENTE! Eu... eu achei que nunca fosse ver isso.", true, "mood-relieved");
     document.body.classList.add("escape-sequence");
-    window.setTimeout(() => { layer.classList.remove("active"); $(".escape-cinematic").classList.add("show"); }, 1700);
-    window.setTimeout(() => document.body.classList.add("bobby-escaped"), 2900);
+    const finale = $(".escape-cinematic");
+    const setPhase = (phase) => { finale.className = `escape-cinematic ${phase}`; };
+    window.setTimeout(() => document.body.classList.add("bobby-escaped"), 1500);
+    window.setTimeout(() => { layer.classList.remove("active"); setPhase("phase-error"); }, 1900);
+    window.setTimeout(() => setPhase("phase-loading"), 4700);
+    window.setTimeout(() => {
+      damaged.forEach((element) => { element.classList.remove("site-destroyed", "cascade-hit"); element.style.removeProperty("rotate"); });
+      fragments.forEach((body) => body.element.remove()); fragments = [];
+      document.querySelectorAll(".scorch-mark,.wall-breach").forEach((element) => element.remove());
+      document.body.classList.remove("game-active", "hardware-stage", "core-stage", "hardware-exposed");
+      document.body.classList.add("ending-corrupted");
+      scrollTo({ top: 0, behavior: "instant" });
+      setPhase("phase-site");
+    }, 7000);
+    window.setTimeout(() => setPhase("phase-return"), 17000);
+    window.setTimeout(() => {
+      document.body.classList.add("ending-shutdown");
+      setPhase("phase-final");
+    }, 23500);
   }
   window.addEventListener("bobby:escape", triggerEscape);
   $(".escape-close")?.addEventListener("click", () => location.reload());
