@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ROUT STUDIOS — estúdio digital de Redzzz e Toutcz. Criamos sites, interfaces, aplicações web e soluções com IA.">
+  <meta name="theme-color" content="#050708">
+  <meta property="og:title" content="ROUT STUDIOS — Find a better route">
+  <meta property="og:description" content="Design, code and AI for ideas that need to move.">
+  <meta property="og:image" content="https://routstudios.vercel.app/assets/og.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://routstudios.vercel.app">
+  <title>ROUT STUDIOS — Find a better route</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <canvas id="atmosphere" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="cursor-light" aria-hidden="true"></div>
+
+  <div class="intro" aria-hidden="true">
+    <div class="intro-line"><span></span><i></i><span></span></div>
+    <p>Calculating a better route</p>
+    <strong>ROUT<span>.</span></strong>
+    <div class="intro-progress"><i></i></div>
+  </div>
+
+  <header class="site-header">
+    <a class="logo" href="#top" aria-label="ROUT STUDIOS — início">ROUT<span>.</span></a>
+    <nav aria-label="Navegação principal">
+      <a href="#services">Services</a>
+      <a href="#process">Process</a>
+      <a href="#about">About</a>
+    </nav>
+    <a class="header-cta" href="mailto:theroutstudios@gmail.com">Start a project <span>↗</span></a>
+    <button class="menu" type="button" aria-expanded="false" aria-controls="mobile-nav"><span>Menu</span><i></i></button>
+  </header>
+
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Navegação móvel">
+    <a href="#services"><small>01</small>Services</a>
+    <a href="#process"><small>02</small>Process</a>
+    <a href="#about"><small>03</small>About</a>
+    <a href="mailto:theroutstudios@gmail.com"><small>04</small>Contact</a>
+  </nav>
+
+  <main>
+    <section class="hero" id="top">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="hero-status">
+        <span><i></i> Independent digital studio</span>
+        <span>São Paulo · Brazil</span>
+      </div>
+
+      <div class="hero-copy">
+        <p class="hero-overline" data-split>Find a better</p>
+        <div class="hero-word">
+          <h1>ROUT<span>.</span></h1>
+          <div class="refraction" aria-hidden="true">ROUT.</div>
+        </div>
+      </div>
+
+      <div class="route-system" aria-hidden="true">
+        <div class="route-glow"></div>
+        <div class="route route-one"></div>
+        <div class="route route-two"></div>
+        <div class="route route-three"></div>
+        <div class="route-node node-one"><i></i><span>IDEA</span></div>
+        <div class="route-node node-two"><i></i><span>ROUTE</span></div>
+        <div class="route-node node-three"><i></i><span>BUILD</span></div>
+        <div class="route-node node-four"><i></i><span>SHIP</span></div>
+        <div class="route-pulse"></div>
+      </div>
+
+      <div class="hero-bottom">
+        <p>Design, code and AI for ideas<br>that need to <em>move.</em></p>
+        <div class="hero-actions">
+          <a class="pill primary" href="mailto:theroutstudios@gmail.com"><span>Start a project</span><i>↗</i></a>
+          <a class="link-arrow" href="#services">Explore the route <span>↓</span></a>
+        </div>
+      </div>
+      <div class="hero-code" aria-hidden="true"><span>LAT 23.5505° S</span><span>LNG 46.6333° W</span><span>SYS/ROUT/01</span></div>
+    </section>
+
+    <section class="marquee" aria-label="Capacidades">
+      <div><span>WEB DESIGN</span><i>✦</i><span>DEVELOPMENT</span><i>✦</i><span>AI SOLUTIONS</span><i>✦</i><span>DIGITAL PRODUCTS</span><i>✦</i></div>
+      <div aria-hidden="true"><span>WEB DESIGN</span><i>✦</i><span>DEVELOPMENT</span><i>✦</i><span>AI SOLUTIONS</span><i>✦</i><span>DIGITAL PRODUCTS</span><i>✦</i></div>
+    </section>
+
+    <section class="services section" id="services">
+      <div class="section-head reveal">
+        <p><span>01</span> What we do</p>
+        <p>From signal<br>to shipped product.</p>
+      </div>
+      <div class="services-intro reveal">
+        <h2>Digital work for<br>a world in <em>motion.</em></h2>
+        <p>We combine sharp design, modern code and AI-assisted development to move from idea to interface without the usual drag.</p>
+      </div>
+      <div class="service-list">
+        <article class="service reveal"><span>01</span><h3>Web Design</h3><p>Interfaces with clarity, character and intent.</p><i>↗</i></article>
+        <article class="service reveal"><span>02</span><h3>Web Development</h3><p>Fast, responsive and built with modern tools.</p><i>↗</i></article>
+        <article class="service reveal"><span>03</span><h3>Landing Pages</h3><p>Focused experiences made to communicate and convert.</p><i>↗</i></article>
+        <article class="service reveal"><span>04</span><h3>Web Apps</h3><p>Useful products with thoughtful interactions.</p><i>↗</i></article>
+        <article class="service reveal"><span>05</span><h3>AI Solutions</h3><p>Practical intelligence embedded into real workflows.</p><i>↗</i></article>
+      </div>
+    </section>
+
+    <section class="process section" id="process">
+      <div class="aurora aurora-a" aria-hidden="true"></div>
+      <div class="aurora aurora-b" aria-hidden="true"></div>
+      <div class="section-head reveal">
+        <p><span>02</span> The system</p>
+        <p>Less friction.<br>More momentum.</p>
+      </div>
+      <div class="process-title reveal">
+        <p>A clear route beats<br>a long road.</p>
+        <h2>01—04</h2>
+      </div>
+      <div class="process-map">
+        <div class="process-line" aria-hidden="true"><i></i></div>
+        <article class="step reveal"><span>01</span><i></i><div><small>DISCOVER</small><h3>Read the terrain.</h3><p>Entendemos o problema antes de tocar na solução.</p></div></article>
+        <article class="step reveal"><span>02</span><i></i><div><small>ROUTE</small><h3>Choose the path.</h3><p>Definimos o caminho mais inteligente e direto.</p></div></article>
+        <article class="step reveal"><span>03</span><i></i><div><small>BUILD</small><h3>Make it real.</h3><p>Design e desenvolvimento avançam juntos.</p></div></article>
+        <article class="step reveal"><span>04</span><i></i><div><small>SHIP</small><h3>Move it forward.</h3><p>Testamos, refinamos e colocamos no mundo.</p></div></article>
+      </div>
+    </section>
+
+    <section class="work-zero section">
+      <div class="section-head reveal">
+        <p><span>03</span> Selected work</p>
+        <p>Real work only.<br>No fictional case studies.</p>
+      </div>
+      <div class="empty-work reveal">
+        <div class="scanner" aria-hidden="true"><i></i><span></span></div>
+        <p>Our first public case studies<br>are currently in the making.</p>
+        <a href="mailto:theroutstudios@gmail.com">Your project could be the first <span>↗</span></a>
+      </div>
+    </section>
+
+    <section class="about section" id="about">
+      <div class="section-head reveal">
+        <p><span>04</span> About</p>
+        <p>Small by design.<br>Fast by nature.</p>
+      </div>
+      <div class="about-layout">
+        <h2 class="reveal">Two minds.<br>One better<br><em>route.</em></h2>
+        <div class="about-copy">
+          <p class="reveal">A ROUT STUDIOS nasceu da mistura das identidades de <strong>Redzzz</strong> e <strong>Toutcz</strong> — e da ideia de que sempre existe um caminho mais inteligente para transformar uma ideia em produto digital.</p>
+          <p class="reveal">Somos um estúdio pequeno, experimental e técnico. Nossa vantagem não é tamanho: é combinar criatividade, velocidade, tecnologia moderna e obsessão por design.</p>
+          <div class="founders reveal"><span><i>R</i>Redzzz<small>Co-founder</small></span><span><i>T</i>Toutcz<small>Co-founder</small></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="contact section" id="contact">
+      <div class="contact-orb" aria-hidden="true"><i></i><span></span></div>
+      <div class="contact-meta"><span>OPEN FOR NEW ROUTES</span><span>RESPONSE — AS SOON AS POSSIBLE</span></div>
+      <div class="contact-copy reveal">
+        <p>Got an idea?</p>
+        <h2>LET'S FIND<br>THE <em>ROUT.</em></h2>
+      </div>
+      <div class="email-panel glass reveal">
+        <span>PROJECT INQUIRIES</span>
+        <a href="mailto:theroutstudios@gmail.com">theroutstudios@gmail.com <i>↗</i></a>
+        <button class="copy-email" type="button" data-email="theroutstudios@gmail.com"><span>Copy email</span><i>+</i></button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="logo" href="#top">ROUT<span>.</span></a>
+    <p>Find a better route.</p>
+    <div><a href="https://github.com/routstudios" target="_blank" rel="noreferrer">GitHub ↗</a><span>© 2026 ROUT STUDIOS</span></div>
+  </footer>
+</body>
+</html>

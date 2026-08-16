@@ -1,20 +1,15 @@
 # ROUT STUDIOS
 
-Portfólio oficial da Rout Studios — um estúdio digital independente criado por Redzzz e ToutCZ.
+Portfólio oficial da Rout Studios — um estúdio digital independente criado por Redzzz e Toutcz.
 
-## Stack
+## Tecnologia
 
-- Next.js + TypeScript
-- Tailwind CSS
-- Framer Motion
+HTML, CSS e JavaScript puros. Sem etapa de build e sem dependências.
 
 ## Desenvolvimento
 
 ```bash
-npm install
-npm run dev
+python3 -m http.server 4173
 ```
 
-## Deploy
-
-O projeto está pronto para importação e deploy na Vercel.
+Abra `http://localhost:4173`.
