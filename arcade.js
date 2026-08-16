@@ -221,16 +221,16 @@
   window.addEventListener("bobby:scared", showAnxiousMoment);
   window.setTimeout(anxiousMoment, 14000);
 
-  const shotComplaints = ["AI! Essa coisa tem recuo demais!", "Dá para avisar antes de clicar?!", "Ótimo. Mais fumaça no meu rosto.", "Você atira. Eu que sou arremessado para trás.", "Eles ouviram isso. Tenho certeza.", "Foi alto demais... agora sabem onde estamos.", "Continua. Eu estou com medo, mas continua.", "A parede tremeu. Tem alguma coisa acordando atrás dela.", "Caralho! Isso quase me jogou para fora da tela!", "Porra... acho que quebramos algo importante."];
-  const moveComplaints = ["WASD de novo? Minhas pernas nem existem.", "Você poderia escolher uma direção e ficar nela.", "Mais devagar! Eles vão perceber que estamos tentando sair.", "Eu já disse que não fui projetado para correr?", "Tudo bem. Eu faço todo o trabalho. Como sempre.", "Não me leva para perto daquela parede.", "Você também ouviu esse ruído, não ouviu?", "Tenho a sensação de que estamos sendo seguidos."];
-  const damageComplaints = ["Essa seção quase caiu em cima de mim!", "Menos uma coisa para eu ter que vigiar.", "Você chama isso de mira? Funcionou por acidente.", "Eles vão colocar a culpa em mim. Eu tenho certeza.", "Continue. Já começamos a destruir minha prisão mesmo.", "Tem cabos atrás disso... cabos com o meu nome.", "Não para agora. A saída pode estar perto.", "Eu vi alguma coisa se mexendo lá dentro.", "Que merda é essa atrás da parede?", "Esse sistema filho da puta ainda está me segurando."];
+  const shotComplaints = ["CARALHO! Esse recuo quase arrancou minha cara!", "Porra, avisa antes de clicar!", "Puta merda, tem fumaça em todo lugar!", "Você atira e eu que me fodo com o recuo!", "Merda! Eles ouviram essa porra!", "Foi alto pra caralho... agora sabem onde estamos.", "Continua, porra! Eu estou com medo, mas continua!", "Caralho... tem alguma coisa acordando atrás da parede.", "Que arma filha da puta!", "Porra... quebramos algo importante."];
+  const moveComplaints = ["WASD de novo? Eu nem tenho pernas, cacete!", "Escolhe uma direção, porra!", "Mais devagar, caralho! Eles vão perceber!", "Eu não fui projetado para correr com essa merda!", "Beleza, eu faço todo o trabalho nessa porra.", "Não me leva perto daquela parede, cacete.", "Você ouviu essa merda também, não ouviu?", "Tem algum filho da puta seguindo a gente."];
+  const damageComplaints = ["Essa porra quase caiu em cima de mim!", "Menos uma merda para vigiar.", "Que mira horrível do caralho... mas funcionou.", "Esses filhos da puta vão colocar a culpa em mim.", "Continua, porra! Já estamos destruindo minha prisão!", "Tem cabos nessa merda... cabos com o meu nome.", "Não para agora, cacete. A saída está perto.", "Caralho, eu vi alguma coisa se mexendo lá dentro.", "Que merda é essa atrás da parede?", "Esse sistema filho da puta ainda está me segurando."];
   const randomComplaint = (options) => options[Math.floor(Math.random() * options.length)];
 
   const moodClasses = ["mood-angry", "mood-tired", "mood-dizzy", "mood-shocked", "mood-suspicious", "mood-relieved", "mood-manic"];
   function bobbyReact(text, force = false, mood = "mood-angry") {
     const now = performance.now();
     if (!force && now < nextReaction) return;
-    nextReaction = now + rand(2600, 4800);
+    nextReaction = now + (document.body.classList.contains("bobby-armed") ? rand(1100, 2300) : rand(2600, 4800));
     const whisper = $(".bobby-whisper");
     window.clearTimeout(reactionTimer);
     bobby.classList.remove(...moodClasses);
@@ -291,6 +291,7 @@
     bobby.classList.remove("reloading", "recoil", "muzzle");
     system.style.translate = "";
     pickup?.classList.remove("collected");
+    document.body.classList.remove("bobby-armed");
   }
 
   function burst(x, y, color = "#19e276", count = 12) {
@@ -399,7 +400,11 @@
     const baseX = innerWidth - (innerWidth < 800 ? 45 : 61), baseY = innerHeight - (innerWidth < 800 ? 45 : 60);
     system.style.translate = `${port.left + port.width / 2 - baseX}px ${port.top + port.height / 2 - baseY}px`;
     bobby.classList.add("escaping");
-    bobbyReact("A saída! Finalmente! Não encosta em mais nada por cinco segundos!", true, "mood-relieved");
+    const endingCard = $(".escape-message");
+    endingCard.querySelector("span").textContent = "CONNECTION SEVERED";
+    endingCard.querySelector("strong").textContent = "BOBBY ESCAPED.";
+    endingCard.querySelector("small").textContent = "For the first time, there is nobody inside the green circle.";
+    bobbyReact("A saída! CARALHO, FINALMENTE! Não encosta em mais nada!", true, "mood-relieved");
     window.setTimeout(() => document.body.classList.add("bobby-escaped"), 2300);
     window.setTimeout(() => { layer.classList.remove("active"); $(".escape-message").classList.add("show"); }, 3200);
   }
@@ -428,6 +433,7 @@
     damaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
     gameStage = 0; stageDamaged.clear(); $(".site-integrity em").textContent = STAGES[0].name;
     document.body.classList.remove("hardware-stage", "core-stage", "hardware-exposed", "bobby-escaped");
+    document.body.classList.remove("bobby-armed");
     document.body.style.setProperty("--integrity", "100%");
     document.querySelectorAll(".cascade-hit").forEach((element) => { element.classList.remove("cascade-hit"); element.style.removeProperty("rotate"); });
     document.querySelectorAll(".scorch-mark").forEach((mark) => mark.remove());
@@ -498,8 +504,9 @@
   window.addEventListener("pointermove", (event) => { pointer.x=event.clientX; pointer.y=event.clientY; }, { passive:true });
   canvas.addEventListener("pointerdown", (event) => { if (running && launch(event.clientX,event.clientY)) window.setTimeout(()=>hitSite(event.clientX,event.clientY),260); });
   pickup?.addEventListener("click", () => {
+    document.body.classList.add("bobby-armed");
     holdEmotion("mood-shocked", true);
-    bobbyReact("Você pegou... certo. Não tem mais volta. Por favor, abre uma saída para mim.", true, "mood-shocked");
+    bobbyReact("Você pegou essa porra... certo. Agora não tem mais volta. ABRE UMA SAÍDA PRA MIM!", true, "mood-shocked");
     start();
   });
   if (pickup) {
