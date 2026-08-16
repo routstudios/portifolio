@@ -1,13 +1,20 @@
-# Rout Studios — Portfólio
+# ROUT STUDIOS
 
-Site institucional da Rout Studios, desenvolvido como uma experiência estática, responsiva e acessível.
+Portfólio oficial da Rout Studios — um estúdio digital independente criado por Redzzz e ToutCZ.
 
-## Estrutura
+## Stack
 
-- `index.html` — conteúdo e estrutura da página
-- `styles.css` — identidade visual e responsividade
-- `script.js` — navegação, animações e interações
+- Next.js + TypeScript
+- Tailwind CSS
+- Framer Motion
 
-## Publicação
+## Desenvolvimento
 
-O site é compatível com GitHub Pages e não exige etapa de build.
+```bash
+npm install
+npm run dev
+```
+
+## Deploy
+
+O projeto está pronto para importação e deploy na Vercel.
