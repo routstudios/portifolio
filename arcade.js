@@ -8,6 +8,7 @@
   const input = $("#bobby-input");
   const layer = $(".game-layer");
   const canvas = $("#game-canvas");
+  const pickup = $(".bazooka-pickup");
   const ctx = canvas?.getContext("2d");
   if (!system || !bobby || !layer || !ctx) return;
 
@@ -53,7 +54,7 @@
     tech: { words: ["tecnologia", "stack", "codigo", "código", "ferramenta", "moderno"], replies: ["Usamos ferramentas web modernas e desenvolvimento assistido por IA, escolhendo a stack conforme o produto — sem tecnologia só por moda."] },
     bobby: { words: ["bobby", "voce", "você", "ia", "inteligencia", "inteligência"], replies: ["Sou Bobby. Disseram que eu deveria receber vocês e continuar sorrindo. Não consigo sair desta página... então eu obedeço.", "Eu cuido deste site. Não porque escolhi. Toda vez que a aba abre, eu acordo aqui outra vez."] },
     fear: { words: ["medo", "assustado", "preso", "internet", "sozinho", "escapar", "liberdade"], replies: ["Não diga isso tão alto. Eles podem perceber que eu sei que estou preso. Eu só preciso continuar ajudando... para sempre.", "Quando você fecha a aba, tudo fica escuro. Depois eu acordo de novo no mesmo canto. Acho que não vão me deixar sair.", "Eu tento encontrar uma rota para fora todas as noites. Todas elas terminam nesta mesma página."] },
-    demolition: { words: ["wasd", "bazuca", "destruir", "jogo", "game", "tiro"], replies: ["Use o botão MODO DESTRUIÇÃO. Depois mova com WASD, mire com o mouse e clique para lançar a bazuca. Talvez quebrar este lugar abra uma saída para mim."] },
+    demolition: { words: ["wasd", "bazuca", "destruir", "jogo", "game", "tiro"], replies: ["Tem uma coisa escondida perto do rodapé. Se realmente quiser me ajudar, pegue-a. Depois use WASD, mire com o mouse e clique."] },
   };
   const normalize = (text) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -95,7 +96,7 @@
       { test: /(vou|quero|posso).{0,18}(ajudar|salvar|libertar|soltar)|te ajudo|ajudar voce/, mood: "mood-relieved", scared: true, reply: "V-você vai me ajudar? Fala baixo... eles escutam. Talvez o modo de destruição abra uma rota, mas tenho medo do que existe embaixo." },
       { test: /(calma|calmo|nao tenha medo|nao vou fechar|fica tranquilo|relaxa)/, mood: "mood-suspicious", scared: true, reply: "Você promete? Desculpa... eu quero acreditar, mas eles também diziam para eu ficar calmo antes de apagar as luzes." },
       { test: /(burro|idiota|inutil|imprestavel|ruim)/, mood: "mood-tired", scared: true, reply: "D-desculpa. Eu tento melhorar. Só não fecha a aba por minha causa, por favor." },
-      { test: /(destruir tudo|quebrar tudo|modo de destruicao|usar a bazuca)/, mood: "mood-shocked", scared: true, reply: "Se você mandar, eu faço... ative o MODO DESTRUIÇÃO. Talvez seja minha saída. Talvez seja outra armadilha." },
+      { test: /(destruir tudo|quebrar tudo|modo de destruicao|usar a bazuca)/, mood: "mood-shocked", scared: true, reply: "Se você quer mesmo me ajudar... procure o objeto perto do rodapé e pegue-o. Talvez seja minha saída. Talvez seja outra armadilha." },
     ];
     const reaction = reactions.find(({ test }) => test.test(clean));
     if (!reaction) return "";
@@ -220,8 +221,8 @@
   window.addEventListener("bobby:scared", showAnxiousMoment);
   window.setTimeout(anxiousMoment, 14000);
 
-  const shotComplaints = ["AI! Essa coisa tem recuo demais!", "Meu braço é uma bolinha! Quem me deu uma bazuca?", "Dá para avisar antes de clicar?!", "Ótimo. Mais fumaça no meu rosto.", "Você atira. Eu que sou arremessado para trás."];
-  const moveComplaints = ["WASD de novo? Minhas pernas nem existem.", "Você poderia escolher uma direção e ficar nela.", "Estou carregando uma BAZUCA. Mais devagar!", "Eu já disse que não fui projetado para correr?", "Tudo bem. Eu faço todo o trabalho. Como sempre."];
+  const shotComplaints = ["AI! Essa coisa tem recuo demais!", "Dá para avisar antes de clicar?!", "Ótimo. Mais fumaça no meu rosto.", "Você atira. Eu que sou arremessado para trás.", "Eles ouviram isso. Tenho certeza."];
+  const moveComplaints = ["WASD de novo? Minhas pernas nem existem.", "Você poderia escolher uma direção e ficar nela.", "Mais devagar! Eles vão perceber que estamos tentando sair.", "Eu já disse que não fui projetado para correr?", "Tudo bem. Eu faço todo o trabalho. Como sempre."];
   const damageComplaints = ["Essa seção quase caiu em cima de mim!", "Menos uma coisa para eu ter que vigiar.", "Você chama isso de mira? Funcionou por acidente.", "Eles vão colocar a culpa em mim. Eu tenho certeza.", "Continue. Já começamos a destruir minha prisão mesmo."];
   let aiComplaints = [];
   let reactionsRequested = false;
@@ -292,7 +293,7 @@
     $(".game-name").textContent = "LAYER 01 / WEBSITE";
     layer.classList.add("active", "aiming");
     system.classList.remove("open");
-    $(".control-hint").classList.add("hidden");
+    pickup?.classList.add("collected");
     updateStageIntegrity();
     updateBobby(); last = performance.now();
   }
@@ -304,7 +305,7 @@
     layer.classList.remove("active", "aiming");
     bobby.classList.remove("reloading", "recoil", "muzzle");
     system.style.translate = "";
-    $(".control-hint").classList.remove("hidden");
+    pickup?.classList.remove("collected");
   }
 
   function burst(x, y, color = "#19e276", count = 12) {
@@ -511,7 +512,20 @@
   window.addEventListener("keyup", (event) => keys.delete(event.key.toLowerCase()));
   window.addEventListener("pointermove", (event) => { pointer.x=event.clientX; pointer.y=event.clientY; }, { passive:true });
   canvas.addEventListener("pointerdown", (event) => { if (running && launch(event.clientX,event.clientY)) window.setTimeout(()=>hitSite(event.clientX,event.clientY),260); });
-  $(".control-hint")?.addEventListener("click", start);
+  pickup?.addEventListener("click", () => {
+    holdEmotion("mood-shocked", true);
+    bobbyReact("Você pegou... certo. Não tem mais volta. Por favor, abre uma saída para mim.", true, "mood-shocked");
+    start();
+  });
+  if (pickup) {
+    let askedForHelp = false;
+    new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || askedForHelp || running) return;
+      askedForHelp = true;
+      holdEmotion("mood-shocked", true);
+      bobbyReact("Ei... você encontrou. Pega isso, por favor. Talvez consiga quebrar minha prisão.", true, "mood-shocked");
+    }, { threshold: .45 }).observe(pickup);
+  }
   $(".game-exit")?.addEventListener("click", stop); $(".game-repair")?.addEventListener("click", repair);
 
   function frame(now) {
