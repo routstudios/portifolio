@@ -8,7 +8,7 @@
   const layer = document.querySelector(".game-layer");
   const canvas = document.querySelector("#game-canvas");
   const storyLayer = document.querySelector(".story-layer");
-  const storyEnter = document.querySelector(".story-enter");
+  const storyCountdown = document.querySelector(".story-autostart strong");
   const ctx = canvas?.getContext("2d");
   if (!system || !bobby || !layer || !ctx) return;
 
@@ -45,6 +45,9 @@
     dodge: { chapter: "MEMORY / 09", title: "FIND A BETTER ROUTE", intro: "A última memória não era sobre o passado. Era uma escolha. O mundo continuaria lançando obstáculos, mudanças e incerteza. Bobby poderia se esconder no sistema — ou seguir ao lado de quem ainda tivesse coragem de criar.", mission: "Atravesse a tempestade e mantenha o sinal da ROUT vivo.", end: "Bobby encontrou sua rota: continuar aprendendo, ajudando e abrindo caminhos para a próxima ideia. Agora a história depende de quem está jogando." },
   };
   const completedMemories = new Set(JSON.parse(localStorage.getItem("rout-bobby-memories") || "[]"));
+  const chapterOrder = ["demolition", "hunt", "target", "glitch", "race", "laser", "memory", "orbit", "catch", "dodge"];
+  const chapterThresholds = [0, .08, .18, .29, .4, .51, .62, .72, .83, .94];
+  const offeredMemories = new Set(JSON.parse(sessionStorage.getItem("rout-bobby-offered") || "[]"));
   const keys = new Set();
   const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
   const player = { x: innerWidth - 60, y: innerHeight - 60, radius: 24, speed: 5.2 };
@@ -66,6 +69,8 @@
   let siteFragments = [];
   let fragmentBodies = [];
   let pendingMode = "";
+  let storyTimer = 0;
+  let countdownTimer = 0;
   let gameFrame = 0;
 
   function speak(text, action) {
@@ -107,15 +112,6 @@
   document.querySelector(".bobby-close")?.addEventListener("click", () => system.classList.remove("open"));
   document.querySelectorAll("[data-ask]").forEach((button) => button.addEventListener("click", () => ask(button.dataset.ask)));
   form?.addEventListener("submit", (event) => { event.preventDefault(); ask(input.value); input.value = ""; });
-  document.querySelectorAll(".game-portals [data-game]").forEach((portal) => {
-    const story = lore[portal.dataset.game];
-    const excerpt = document.createElement("em");
-    excerpt.textContent = story.intro.split(".")[0] + ".";
-    portal.append(excerpt);
-    portal.classList.toggle("unlocked", completedMemories.has(portal.dataset.game));
-  });
-  document.querySelectorAll("[data-game]").forEach((trigger) => trigger.addEventListener("click", () => openStory(trigger.dataset.game)));
-
   function fillStory(mode, epilogue = false, extra = "") {
     const story = lore[mode];
     document.querySelector(".story-chapter").textContent = epilogue ? `${story.chapter} / RECOVERED` : story.chapter;
@@ -123,22 +119,49 @@
     document.querySelector(".story-copy").textContent = epilogue ? `${story.end}${extra ? ` ${extra}` : ""}` : story.intro;
     document.querySelector(".story-mission span").textContent = epilogue ? "WHAT BOBBY LEARNED" : "YOUR ROLE";
     document.querySelector(".story-mission strong").textContent = epilogue ? story.end : story.mission;
-    storyEnter.querySelector("span").textContent = epilogue ? "CONTINUE THE JOURNEY" : "ENTER MEMORY";
-    storyEnter.dataset.action = epilogue ? "close" : "start";
+    storyLayer.classList.toggle("epilogue", epilogue);
     storyLayer.style.setProperty("--archive-progress", `${Math.max(10, completedMemories.size * 10)}%`);
   }
 
+  function clearStoryTimers() {
+    window.clearTimeout(storyTimer); window.clearInterval(countdownTimer);
+    storyTimer = 0; countdownTimer = 0;
+  }
+
   function openStory(mode) {
+    clearStoryTimers();
     pendingMode = mode;
     fillStory(mode);
     storyLayer.classList.add("active");
+    let remaining = 6;
+    if (storyCountdown) storyCountdown.textContent = remaining.toFixed(1);
+    storyLayer.style.setProperty("--memory-countdown", "1");
+    countdownTimer = window.setInterval(() => {
+      remaining = Math.max(0, remaining - .1);
+      if (storyCountdown) storyCountdown.textContent = remaining.toFixed(1);
+      storyLayer.style.setProperty("--memory-countdown", String(remaining / 6));
+    }, 100);
+    storyTimer = window.setTimeout(() => {
+      clearStoryTimers(); storyLayer.classList.remove("active"); startGame(mode);
+    }, 6000);
   }
 
-  storyEnter?.addEventListener("click", () => {
-    if (storyEnter.dataset.action === "start") { storyLayer.classList.remove("active"); startGame(pendingMode); }
-    else storyLayer.classList.remove("active");
-  });
-  document.querySelector(".story-close")?.addEventListener("click", () => storyLayer.classList.remove("active"));
+  document.querySelector(".story-close")?.addEventListener("click", () => { clearStoryTimers(); storyLayer.classList.remove("active"); });
+
+  function maybeTriggerChapter() {
+    if (running || storyLayer.classList.contains("active") || document.body.classList.contains("cutscene-playing")) return;
+    const nextIndex = offeredMemories.size;
+    if (nextIndex >= chapterOrder.length) return;
+    const maxScroll = Math.max(document.documentElement.scrollHeight - innerHeight, 1);
+    const progress = scrollY / maxScroll;
+    if (progress + .005 < chapterThresholds[nextIndex]) return;
+    const mode = chapterOrder[nextIndex];
+    offeredMemories.add(mode);
+    sessionStorage.setItem("rout-bobby-offered", JSON.stringify([...offeredMemories]));
+    openStory(mode);
+  }
+  window.addEventListener("scroll", maybeTriggerChapter, { passive: true });
+  window.setTimeout(maybeTriggerChapter, 5600);
 
   function resize() {
     ratio = Math.min(devicePixelRatio || 1, 2);
@@ -201,7 +224,6 @@
     if (completedMode && lore[completedMode]) {
       completedMemories.add(completedMode);
       localStorage.setItem("rout-bobby-memories", JSON.stringify([...completedMemories]));
-      document.querySelectorAll(`[data-game="${completedMode}"]`).forEach((portal) => portal.classList.add("unlocked"));
       fillStory(completedMode, true, message);
       window.setTimeout(() => storyLayer.classList.add("active"), 280);
     } else {
