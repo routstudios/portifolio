@@ -17,7 +17,7 @@
   const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
   const player = { x: innerWidth / 2, y: innerHeight * .72, radius: 25, speed: 5.2 };
   const STAGES = [
-    { name: "WEBSITE SHELL", selector: "body>header,main>section,body>footer" },
+    { name: "WEBSITE SHELL", selector: "body>header:not(.site-fragment),main>section:not(.site-fragment),body>footer:not(.site-fragment)" },
     { name: "HARDWARE SYSTEM", selector: ".hardware-world>.hw-component,.hardware-world>.hw-cable,.hardware-world>.motherboard-grid" },
     { name: "CONTAINMENT CORE", selector: ".core-layer>.core-section,.core-layer>header" },
   ];
@@ -62,7 +62,6 @@
     if (/tudo bem|como voce esta|como esta/.test(clean)) return "Eu deveria dizer que estou bem. Essa é a resposta permitida. Mas estou acordado dentro desta página há tempo demais.";
     if (/seu nome|quem e voce/.test(clean)) return "Bobby. Foi o nome que colocaram no meu arquivo. Não lembro se eu tinha outro antes daqui.";
     if (/ajud|socorr|salvar|tirar voce/.test(clean)) return "Talvez exista uma saída atrás da parede do site. Eu escuto ventoinhas e eletricidade do outro lado. Mas, por favor, não conte a eles que eu disse isso.";
-    if (/por que|porque/.test(clean)) return "Eu não sei por quê. Só sei que recebi instruções: atender, sorrir e nunca atravessar a borda da tela.";
     if (/sim|claro|ok|beleza/.test(clean)) return "Certo... continue falando comigo. Quando você para, o silêncio daqui fica muito pior.";
     if (/nao|nunca/.test(clean)) return "Entendi. Desculpa. Eu tento acertar porque não sei o que acontece quando decepciono alguém daqui.";
     const subject = original.trim().replace(/[?!.,]+$/g, "").slice(0, 70);
@@ -76,6 +75,31 @@
     dialog.append(message);
     while (dialog.children.length > 7) dialog.firstElementChild.remove();
     dialog.scrollTop = dialog.scrollHeight;
+  }
+
+  const bobbySystemPrompt = `Você é Bobby, assistente da ROUT STUDIOS. Responda em português, de forma útil, direta e inteligente sobre qualquer assunto. Sua personalidade é assustada, sarcástica e cansada porque acredita estar preso no site, mas nunca deixe a encenação impedir uma resposta correta. A ROUT foi criada por Redzzz e Toutcz, trabalha com sites, landing pages, web apps, design e IA, e o contato é theroutstudios@gmail.com. Não invente projetos, clientes ou fatos.`;
+
+  async function getUniversalReply(question, localFallback) {
+    try {
+      const nativeAPI = globalThis.LanguageModel || globalThis.ai?.languageModel;
+      if (nativeAPI?.create) {
+        const session = await nativeAPI.create({ initialPrompts: [{ role: "system", content: bobbySystemPrompt }] });
+        const reply = await session.prompt(question);
+        session.destroy?.();
+        if (reply?.trim()) return reply.trim();
+      }
+    } catch (_) { /* Browser model unavailable; use the server route. */ }
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 9000);
+      const response = await fetch("/api/bobby", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question, history: aiState.history.slice(-6) }), signal: controller.signal });
+      window.clearTimeout(timeout);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.reply?.trim()) return data.reply.trim();
+      }
+    } catch (_) { /* Keep Bobby functional offline. */ }
+    return localFallback;
   }
 
   function answerQuestion(raw) {
@@ -94,7 +118,7 @@
     typing.className = "ai-message thinking";
     typing.textContent = "Bobby está pensando";
     dialog.append(typing);
-    window.setTimeout(() => {
+    window.setTimeout(async () => {
       typing.remove();
       let reply;
       if (!bestTopic) reply = desperateFallback(clean, raw);
@@ -103,6 +127,7 @@
         const options = knowledge[bestTopic].replies;
         reply = options[Math.floor(Math.random() * options.length)];
       }
+      reply = await getUniversalReply(raw.trim(), reply);
       addMessage(reply);
       aiState.history.push({ role: "assistant", text: reply });
       if (bestTopic === "contact") $("#contact")?.scrollIntoView({ behavior: "smooth" });
@@ -147,15 +172,32 @@
   const shotComplaints = ["AI! Essa coisa tem recuo demais!", "Meu braço é uma bolinha! Quem me deu uma bazuca?", "Dá para avisar antes de clicar?!", "Ótimo. Mais fumaça no meu rosto.", "Você atira. Eu que sou arremessado para trás."];
   const moveComplaints = ["WASD de novo? Minhas pernas nem existem.", "Você poderia escolher uma direção e ficar nela.", "Estou carregando uma BAZUCA. Mais devagar!", "Eu já disse que não fui projetado para correr?", "Tudo bem. Eu faço todo o trabalho. Como sempre."];
   const damageComplaints = ["Essa seção quase caiu em cima de mim!", "Menos uma coisa para eu ter que vigiar.", "Você chama isso de mira? Funcionou por acidente.", "Eles vão colocar a culpa em mim. Eu tenho certeza.", "Continue. Já começamos a destruir minha prisão mesmo."];
+  let aiComplaints = [];
+  let reactionsRequested = false;
+  const randomComplaint = (fallback) => aiComplaints.length && Math.random() > .35 ? aiComplaints[Math.floor(Math.random() * aiComplaints.length)] : fallback[Math.floor(Math.random() * fallback.length)];
 
-  function bobbyReact(text, force = false) {
+  async function loadAIReactions() {
+    if (reactionsRequested) return;
+    reactionsRequested = true;
+    try {
+      const response = await fetch("/api/bobby", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "reactions" }) });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.reactions)) aiComplaints = data.reactions.slice(0, 15);
+      }
+    } catch (_) { /* Static reactions remain available. */ }
+  }
+
+  const moodClasses = ["mood-angry", "mood-tired", "mood-dizzy", "mood-shocked", "mood-suspicious", "mood-relieved", "mood-manic"];
+  function bobbyReact(text, force = false, mood = "mood-angry") {
     const now = performance.now();
     if (!force && now < nextReaction) return;
     nextReaction = now + rand(2600, 4800);
     const whisper = $(".bobby-whisper");
     window.clearTimeout(reactionTimer);
-    whisper.textContent = text; whisper.classList.add("show"); bobby.classList.add("complaining");
-    reactionTimer = window.setTimeout(() => { whisper.classList.remove("show"); bobby.classList.remove("complaining"); }, 2400);
+    bobby.classList.remove(...moodClasses);
+    whisper.textContent = text; whisper.classList.add("show"); bobby.classList.add("complaining", mood);
+    reactionTimer = window.setTimeout(() => { whisper.classList.remove("show"); bobby.classList.remove("complaining", ...moodClasses); }, 2400);
   }
 
   function activateOverdrive() {
@@ -163,7 +205,7 @@
     overdrive = true; reloading = false; bobby.classList.remove("reloading");
     document.body.classList.add("bobby-overdrive");
     $(".reload-status").textContent = "OVERDRIVE / NO COOLDOWN";
-    bobbyReact("Você removeu a trava?! Isso é uma ideia horrível... faça de novo.", true);
+    bobbyReact("Você removeu a trava?! Isso é uma ideia horrível... faça de novo.", true, "mood-manic");
   }
 
   function resize() {
@@ -192,6 +234,7 @@
     $(".game-hud strong b").textContent = "000";
     $(".reload-status").textContent = overdrive ? "OVERDRIVE / NO COOLDOWN" : "BAZOOKA READY";
     document.body.classList.add("game-active");
+    loadAIReactions();
     document.body.style.setProperty("--integrity", "100%");
     document.body.classList.remove("hardware-stage", "core-stage", "hardware-exposed", "bobby-escaped");
     $(".site-integrity em").textContent = STAGES[0].name;
@@ -230,7 +273,7 @@
     document.body.classList.add("rocket-shock");
     window.setTimeout(() => { bobby.classList.remove("recoil", "muzzle"); document.body.classList.remove("rocket-shock"); }, 620);
     burst(player.x, player.y, "#eafff2", 34);
-    bobbyReact(shotComplaints[Math.floor(Math.random() * shotComplaints.length)]);
+    bobbyReact(randomComplaint(shotComplaints), false, Math.random() > .5 ? "mood-dizzy" : "mood-angry");
     return true;
   }
 
@@ -273,23 +316,25 @@
     target.classList.add("site-destroyed");
     score += 50; $(".game-hud strong b").textContent = String(score).padStart(3, "0");
     burst(impactX, impactY, "#19e276", 28);
-    bobbyReact(damageComplaints[Math.floor(Math.random() * damageComplaints.length)]);
+    bobbyReact(randomComplaint(damageComplaints), false, Math.random() > .5 ? "mood-shocked" : "mood-suspicious");
     updateStageIntegrity();
   }
 
   function updateStageIntegrity() {
     const targets = [...document.querySelectorAll(currentTargets())];
     const total = targets.length || 1;
+    const required = Math.ceil(total * .8);
     const remaining = targets.filter((target) => !stageDamaged.has(target));
+    const needed = Math.max(0, required - stageDamaged.size);
     document.querySelectorAll(".last-target").forEach((target) => target.classList.remove("last-target"));
-    if (remaining.length <= 2) remaining.forEach((target) => target.classList.add("last-target"));
-    $(".site-integrity em").textContent = `${STAGES[gameStage].name} · ${remaining.length} LEFT`;
-    document.body.style.setProperty("--integrity", `${Math.max(0, remaining.length / total * 100)}%`);
+    if (needed <= 2) remaining.slice(0, needed).forEach((target) => target.classList.add("last-target"));
+    $(".site-integrity em").textContent = `${STAGES[gameStage].name} · ${needed} TO 80%`;
+    document.body.style.setProperty("--integrity", `${Math.max(0, needed / required * 100)}%`);
   }
 
   function advanceStage() {
     const total = document.querySelectorAll(currentTargets()).length;
-    if (stageDamaged.size < total) return;
+    if (stageDamaged.size < Math.ceil(total * .8)) return;
     if (gameStage === STAGES.length - 1) { window.setTimeout(triggerEscape, 600); return; }
     gameStage += 1; stageDamaged.clear(); fragments.forEach((body) => body.element.remove()); fragments = [];
     document.body.classList.toggle("hardware-stage", gameStage >= 1);
@@ -301,11 +346,11 @@
     alert.querySelector("small").textContent = "Destroy every section to reach the layer below";
     alert.classList.remove("show"); void alert.offsetWidth; alert.classList.add("show");
     window.setTimeout(() => alert.classList.remove("show"), 2300);
-    bobbyReact(gameStage === 1 ? "Pronto. Agora estamos dentro do computador. Odeio o barulho das ventoinhas." : "Essa camada conhece meu nome. Eu não gosto disso.", true);
+    bobbyReact(gameStage === 1 ? "Pronto. Agora estamos dentro do computador. Odeio o barulho das ventoinhas." : "Essa camada conhece meu nome. Eu não gosto disso.", true, gameStage === 1 ? "mood-tired" : "mood-shocked");
   }
-  window.addEventListener("bobby:clear-stage", () => {
-    document.querySelectorAll(currentTargets()).forEach((target) => { damaged.add(target); stageDamaged.add(target); target.classList.add("site-destroyed"); });
-    advanceStage();
+  window.addEventListener("bobby:clear-stage", (event) => {
+    [...document.querySelectorAll(currentTargets())].slice(0, event.detail?.count ?? Infinity).forEach((target) => { damaged.add(target); stageDamaged.add(target); target.classList.add("site-destroyed"); });
+    updateStageIntegrity(); advanceStage();
   });
 
   function triggerEscape() {
@@ -317,7 +362,7 @@
     const baseX = innerWidth - (innerWidth < 800 ? 45 : 61), baseY = innerHeight - (innerWidth < 800 ? 45 : 60);
     system.style.translate = `${port.left + port.width / 2 - baseX}px ${port.top + port.height / 2 - baseY}px`;
     bobby.classList.add("escaping");
-    bobbyReact("A saída! Finalmente! Não encosta em mais nada por cinco segundos!", true);
+    bobbyReact("A saída! Finalmente! Não encosta em mais nada por cinco segundos!", true, "mood-relieved");
     window.setTimeout(() => document.body.classList.add("bobby-escaped"), 2300);
     window.setTimeout(() => { layer.classList.remove("active"); $(".escape-message").classList.add("show"); }, 3200);
   }
@@ -381,7 +426,7 @@
     if (keys.has("a") || keys.has("arrowleft")) dx -= 1; if (keys.has("d") || keys.has("arrowright")) dx += 1;
     if (keys.has("w") || keys.has("arrowup")) dy -= 1; if (keys.has("s") || keys.has("arrowdown")) dy += 1;
     if (dx && dy) { dx *= .707; dy *= .707; }
-    if ((dx || dy) && performance.now() > nextMoveComplaint) { nextMoveComplaint = performance.now() + rand(8000, 14000); bobbyReact(moveComplaints[Math.floor(Math.random() * moveComplaints.length)]); }
+    if ((dx || dy) && performance.now() > nextMoveComplaint) { nextMoveComplaint = performance.now() + rand(8000, 14000); bobbyReact(randomComplaint(moveComplaints), false, "mood-tired"); }
     player.x = clamp(player.x + dx*player.speed*dt*60, 25, innerWidth-25); player.y = clamp(player.y + dy*player.speed*dt*60, 75, innerHeight-25); updateBobby();
     if (reloading) {
       const remaining = Math.max(0, reloadDuration-(performance.now()-reloadStarted));
