@@ -35,8 +35,76 @@ window.addEventListener("pointermove", (event) => {
 }, { passive: true });
 
 const intro = document.querySelector(".intro");
-if (reducedMotion) intro?.remove();
-else window.setTimeout(() => intro?.classList.add("done"), 1050);
+const cutsceneCanvas = document.querySelector("#cutscene-canvas");
+const cutsceneContext = cutsceneCanvas?.getContext("2d");
+const cutsceneStart = performance.now();
+let cutsceneRunning = !reducedMotion;
+
+function finishCutscene() {
+  if (!cutsceneRunning) return;
+  cutsceneRunning = false;
+  intro?.classList.add("done");
+  document.body.classList.remove("cutscene-playing");
+}
+
+if (reducedMotion) {
+  intro?.remove();
+} else {
+  document.body.classList.add("cutscene-playing");
+  window.setTimeout(finishCutscene, 5200);
+  document.querySelector(".intro-skip")?.addEventListener("click", finishCutscene);
+}
+
+function resizeCutscene() {
+  if (!cutsceneCanvas) return;
+  const ratio = Math.min(devicePixelRatio || 1, 2);
+  cutsceneCanvas.width = innerWidth * ratio;
+  cutsceneCanvas.height = innerHeight * ratio;
+  cutsceneContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+function drawCutscene(time) {
+  if (!cutsceneContext || !cutsceneRunning) return;
+  const elapsed = time - cutsceneStart;
+  const progress = clamp(elapsed / 5000, 0, 1);
+  cutsceneContext.clearRect(0, 0, innerWidth, innerHeight);
+  const startX = -40;
+  const endX = innerWidth + 40;
+  const centerY = innerHeight * 0.53;
+  const pathProgress = clamp((progress - 0.08) / 0.72, 0, 1);
+  cutsceneContext.beginPath();
+  cutsceneContext.moveTo(startX, centerY + 90);
+  cutsceneContext.bezierCurveTo(innerWidth * .22, centerY - 150, innerWidth * .37, centerY + 130, innerWidth * .53, centerY - 30);
+  cutsceneContext.bezierCurveTo(innerWidth * .67, centerY - 170, innerWidth * .8, centerY + 100, endX, centerY - 75);
+  cutsceneContext.strokeStyle = "rgba(25,226,118,.13)";
+  cutsceneContext.lineWidth = 1;
+  cutsceneContext.stroke();
+  cutsceneContext.save();
+  cutsceneContext.beginPath();
+  cutsceneContext.rect(0, 0, innerWidth * pathProgress, innerHeight);
+  cutsceneContext.clip();
+  cutsceneContext.beginPath();
+  cutsceneContext.moveTo(startX, centerY + 90);
+  cutsceneContext.bezierCurveTo(innerWidth * .22, centerY - 150, innerWidth * .37, centerY + 130, innerWidth * .53, centerY - 30);
+  cutsceneContext.bezierCurveTo(innerWidth * .67, centerY - 170, innerWidth * .8, centerY + 100, endX, centerY - 75);
+  cutsceneContext.strokeStyle = "rgba(38,238,132,.9)";
+  cutsceneContext.shadowColor = "rgba(25,226,118,.85)";
+  cutsceneContext.shadowBlur = 18;
+  cutsceneContext.lineWidth = 1.4;
+  cutsceneContext.stroke();
+  cutsceneContext.restore();
+  cutsceneContext.shadowBlur = 0;
+  for (let index = 0; index < 24; index += 1) {
+    const seed = index * 93.17;
+    const x = (seed * 17.3 + elapsed * (0.014 + index % 3 * .003)) % (innerWidth + 120) - 60;
+    const y = (Math.sin(seed) * .38 + .5) * innerHeight;
+    const alpha = .05 + (index % 5) * .018;
+    cutsceneContext.beginPath();
+    cutsceneContext.fillStyle = `rgba(69,244,150,${alpha})`;
+    cutsceneContext.arc(x, y, index % 4 === 0 ? 1.5 : .7, 0, Math.PI * 2);
+    cutsceneContext.fill();
+  }
+}
 
 const menuButton = document.querySelector(".menu");
 const mobileNav = document.querySelector(".mobile-nav");
@@ -479,6 +547,7 @@ function frame(time) {
   });
   if (workPreview) workPreview.style.transform = `perspective(900px) translate3d(${updateSpring(workDrag.x)}px,${updateSpring(workDrag.y)}px,0) rotateY(${workDrag.x.value * 0.035}deg)`;
   if (!reducedMotion) {
+    drawCutscene(time);
     drawParticles();
     drawRoute(time);
   }
@@ -491,6 +560,7 @@ function frame(time) {
 resizeAtmosphere();
 resizeRoute();
 resizeLab();
+resizeCutscene();
 if (reducedMotion) drawRoute(0);
-window.addEventListener("resize", () => { resizeAtmosphere(); resizeRoute(); resizeLab(); }, { passive: true });
+window.addEventListener("resize", () => { resizeAtmosphere(); resizeRoute(); resizeLab(); resizeCutscene(); }, { passive: true });
 window.requestAnimationFrame(frame);
