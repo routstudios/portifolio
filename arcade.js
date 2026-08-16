@@ -8,7 +8,6 @@
   const layer = document.querySelector(".game-layer");
   const canvas = document.querySelector("#game-canvas");
   const storyLayer = document.querySelector(".story-layer");
-  const storyCountdown = document.querySelector(".story-autostart strong");
   const ctx = canvas?.getContext("2d");
   if (!system || !bobby || !layer || !ctx) return;
 
@@ -71,6 +70,9 @@
   let pendingMode = "";
   let storyTimer = 0;
   let countdownTimer = 0;
+  let reloading = false;
+  let reloadStarted = 0;
+  const reloadDuration = 2200;
   let gameFrame = 0;
 
   function speak(text, action) {
@@ -106,6 +108,7 @@
   bobby.addEventListener("click", (event) => {
     if (running) return;
     event.stopPropagation();
+    if (pendingMode) { beginPendingMemory(); return; }
     const open = system.classList.toggle("open");
     bobby.setAttribute("aria-expanded", String(open));
   });
@@ -133,23 +136,20 @@
     pendingMode = mode;
     fillStory(mode);
     storyLayer.classList.add("active");
-    let remaining = 6;
-    if (storyCountdown) storyCountdown.textContent = remaining.toFixed(1);
-    storyLayer.style.setProperty("--memory-countdown", "1");
-    countdownTimer = window.setInterval(() => {
-      remaining = Math.max(0, remaining - .1);
-      if (storyCountdown) storyCountdown.textContent = remaining.toFixed(1);
-      storyLayer.style.setProperty("--memory-countdown", String(remaining / 6));
-    }, 100);
-    storyTimer = window.setTimeout(() => {
-      clearStoryTimers(); storyLayer.classList.remove("active"); startGame(mode);
-    }, 6000);
+    storyTimer = window.setTimeout(() => { clearStoryTimers(); storyLayer.classList.remove("active"); }, 10000);
+  }
+
+  function beginPendingMemory() {
+    if (!pendingMode || running) return;
+    const mode = pendingMode;
+    pendingMode = "";
+    clearStoryTimers(); storyLayer.classList.remove("active"); startGame(mode);
   }
 
   document.querySelector(".story-close")?.addEventListener("click", () => { clearStoryTimers(); storyLayer.classList.remove("active"); });
 
   function maybeTriggerChapter() {
-    if (running || storyLayer.classList.contains("active") || document.body.classList.contains("cutscene-playing")) return;
+    if (running || pendingMode || storyLayer.classList.contains("active") || document.body.classList.contains("cutscene-playing")) return;
     const nextIndex = offeredMemories.size;
     if (nextIndex >= chapterOrder.length) return;
     const maxScroll = Math.max(document.documentElement.scrollHeight - innerHeight, 1);
@@ -201,7 +201,7 @@
   }
 
   function startGame(mode) {
-    active = mode; running = true; setScore(0); timeLeft = mode === "demolition" ? 90 : mode === "memory" ? 60 : 45;
+    active = mode; running = true; reloading = false; setScore(0); timeLeft = mode === "demolition" ? 90 : mode === "memory" ? 60 : 45;
     player.x = innerWidth / 2; player.y = innerHeight * .75;
     document.body.classList.add("game-active");
     layer.classList.add("active");
@@ -216,7 +216,9 @@
 
   function stopGame(message = "Memória encerrada.") {
     const completedMode = active;
-    running = false; active = ""; keys.clear();
+    running = false; active = ""; reloading = false; keys.clear();
+    bobby.classList.remove("reloading", "recoil", "muzzle");
+    document.querySelector(".reload-status").textContent = "BAZOOKA READY";
     document.body.classList.remove("game-active");
     layer.classList.remove("active", "aiming");
     system.style.translate = "";
@@ -258,13 +260,20 @@
   }
 
   function shoot(x, y) {
+    if (reloading) return false;
     const angle = Math.atan2(y - player.y, x - player.x);
-    bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 15, vy: Math.sin(angle) * 15, life: 1.2 });
+    bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 8.5, vy: Math.sin(angle) * 8.5, life: 1.6, rocket: true });
+    reloading = true; reloadStarted = performance.now();
+    document.querySelector(".reload-status").textContent = "RELOADING 2.2";
+    bobby.classList.add("reloading");
     bobby.classList.remove("recoil", "muzzle");
     void bobby.offsetWidth;
     bobby.classList.add("recoil", "muzzle");
     window.setTimeout(() => bobby.classList.remove("recoil", "muzzle"), 130);
-    burst(player.x, player.y, "#baffd9", 4);
+    document.body.classList.add("rocket-shock");
+    window.setTimeout(() => document.body.classList.remove("rocket-shock"), 260);
+    burst(player.x, player.y, "#baffd9", 14);
+    return true;
   }
 
   function chipImpact(x, y, target) {
@@ -333,12 +342,12 @@
   }
 
   function pointerHit(x, y) {
-    if (active === "demolition") { shoot(x, y); window.setTimeout(() => damageSite(x, y), 160); return; }
+    if (active === "demolition") { if (shoot(x, y)) window.setTimeout(() => damageSite(x, y), 260); return; }
     const hit = entities.find((entity) => Math.hypot(entity.x - x, entity.y - y) < entity.r + 10);
     if (!hit) return;
     if (active === "target" && hit.type === "target") { setScore(score + 25); burst(hit.x, hit.y); entities.splice(entities.indexOf(hit), 1); spawnTarget(); }
     if (active === "glitch" && hit.type === "glitch") { setScore(score + 20); burst(hit.x, hit.y); entities.splice(entities.indexOf(hit), 1); }
-    if (active === "orbit" && hit.type === "threat") { shoot(x, y); hit.r -= 6; if (hit.r < 5) { setScore(score + 30); burst(hit.x, hit.y); entities.splice(entities.indexOf(hit), 1); spawnThreat(); } }
+    if (active === "orbit" && hit.type === "threat" && shoot(x, y)) { hit.r -= 6; if (hit.r < 5) { setScore(score + 30); burst(hit.x, hit.y); entities.splice(entities.indexOf(hit), 1); spawnThreat(); } }
     if (active === "memory" && hit.type === "pad" && memoryReveal <= 0) {
       if (hit.index === memorySequence[memoryInput]) {
         memoryInput += 1; burst(hit.x, hit.y, "#aaffcf", 7);
@@ -382,6 +391,7 @@
   }
 
   window.addEventListener("keydown", (event) => {
+    if (!running && pendingMode && ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(event.key.toLowerCase())) { event.preventDefault(); beginPendingMemory(); return; }
     if (!running) return;
     if (["w", "a", "s", "d", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
     keys.add(event.key.toLowerCase());
@@ -408,6 +418,12 @@
     movePlayer(dt); timeLeft -= dt; spawnClock += dt; gameFrame += dt;
     if (timeLeft <= 0) { stopGame(`Fim do protocolo. Score final: ${score}. Quer tentar outra rota?`); return; }
     document.querySelector(".game-time").textContent = timeLeft.toFixed(1);
+    if (reloading) {
+      const remaining = Math.max(0, reloadDuration - (performance.now() - reloadStarted));
+      document.querySelector(".reload-status").textContent = `RELOADING ${(remaining / 1000).toFixed(1)}`;
+      document.body.style.setProperty("--reload-progress", String(1 - remaining / reloadDuration));
+      if (remaining <= 0) { reloading = false; bobby.classList.remove("reloading"); document.querySelector(".reload-status").textContent = "BAZOOKA READY"; }
+    }
     if (active === "hunt") entities.forEach((e) => { e.phase += dt * 2; if (Math.hypot(e.x - player.x, e.y - player.y) < e.r + player.radius) { setScore(score + 20); burst(e.x, e.y); entities.splice(entities.indexOf(e), 1); } });
     if (active === "hunt" && !entities.length) stopGame(`Todos os nós encontrados. Score: ${score}. Rota perfeita.`);
     if (active === "dodge" && spawnClock > .55) { spawnClock = 0; entities.push({ type: "meteor", x: rand(20, innerWidth - 20), y: 70, r: rand(10, 26), vy: rand(3, 7), spin: 0 }); }
@@ -427,7 +443,7 @@
       if (e.type === "laser") { e.p += e.v * dt * 60; const max = e.axis ? innerHeight : innerWidth; if (e.p < 80 || e.p > max) e.v *= -1; const distance = e.axis ? Math.abs(player.y - e.p) : Math.abs(player.x - e.p); if (distance < player.radius + e.width && Math.sin(gameFrame * 5 + e.p) > .92) { setScore(score - 2); burst(player.x, player.y, "#ff455e", 3); } }
       if (e.type === "threat") { const angle = Math.atan2(innerHeight / 2 - e.y, innerWidth / 2 - e.x); e.x += Math.cos(angle) * e.speed * dt * 60; e.y += Math.sin(angle) * e.speed * dt * 60; if (Math.hypot(e.x - innerWidth / 2, e.y - innerHeight / 2) < 34) { setScore(score - 25); burst(e.x, e.y, "#ff455e", 18); entities.splice(entities.indexOf(e), 1); spawnThreat(); } }
     });
-    bullets.forEach((b) => { b.x += b.vx * dt * 60; b.y += b.vy * dt * 60; b.life -= dt; }); bullets = bullets.filter((b) => b.life > 0);
+    bullets.forEach((b) => { b.x += b.vx * dt * 60; b.y += b.vy * dt * 60; b.life -= dt; if (b.rocket && Math.random() > .35) particles.push({ x: b.x - b.vx * 2, y: b.y - b.vy * 2, vx: rand(-.4,.4), vy: rand(-.4,.4), life: rand(.25,.55), color: "#87948d", r: rand(2,5) }); }); bullets = bullets.filter((b) => b.life > 0);
     particles.forEach((p) => { p.x += p.vx * dt * 60; p.y += p.vy * dt * 60; p.vy += .08 * dt * 60; p.life -= dt * 1.6; }); particles = particles.filter((p) => p.life > 0);
   }
 
@@ -450,7 +466,7 @@
       if (e.type === "threat") { ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fillStyle = "#ff455e"; ctx.shadowColor = "#ff455e"; ctx.shadowBlur = 16; ctx.fill(); }
       ctx.restore();
     });
-    bullets.forEach((b) => { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * 2, b.y - b.vy * 2); ctx.strokeStyle = "#baffd9"; ctx.shadowColor = "#19e276"; ctx.shadowBlur = 12; ctx.lineWidth = 2; ctx.stroke(); });
+    bullets.forEach((b) => { if (b.rocket) { const angle = Math.atan2(b.vy,b.vx); ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(angle); ctx.fillStyle="#242b28"; ctx.strokeStyle="#9ba6a1"; ctx.shadowColor="#19e276"; ctx.shadowBlur=14; ctx.beginPath(); ctx.moveTo(13,0); ctx.lineTo(-8,-5); ctx.lineTo(-13,0); ctx.lineTo(-8,5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle="#aaffcf"; ctx.fillRect(-18,-2,7,4); ctx.restore(); } else { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * 2, b.y - b.vy * 2); ctx.strokeStyle = "#baffd9"; ctx.lineWidth = 2; ctx.stroke(); } });
     particles.forEach((p) => { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.r, p.r); }); ctx.globalAlpha = 1;
   }
 
